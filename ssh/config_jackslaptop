@@ -1,0 +1,13 @@
+Host lightsoff-j01
+  HostName 192.168.137.159
+  User lightsoff-j01
+
+Host lightsoff-j02
+  HostName 192.168.137.107
+  User lightsoff-j02
+
+Host lightsoff-j03
+  HostName 192.168.137.125
+  User lightsoff-j03
+
+  
