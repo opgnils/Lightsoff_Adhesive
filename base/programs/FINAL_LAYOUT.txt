@@ -1,0 +1,109 @@
+═══════════════════════════════════════════════════════════════════════════════
+                    LIGHTSOFF DASHBOARD - FINAL LAYOUT
+═══════════════════════════════════════════════════════════════════════════════
+
+LAYOUT PROPORTIONS:
+  • Horizontal: 30% (left) / 70% (right)
+  • Vertical:   80% (top)  / 20% (bottom)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                        LightsOff Control System                              ║
+╠═══════════════════╦══════════════════════════════════════════════════════════╣
+║                   ║                                                          ║
+║  Control System   ║              Operation View                              ║
+║                   ║                                                          ║
+║  ▶ 1. Connect     ║  [Dynamic content based on menu selection]               ║
+║  ▶ 2. Component   ║                                                          ║
+║  ▶ 3. Assembly    ║  • Shows operation details                               ║
+║  ▶ 4. Adhesive    ║  • Interactive controls                                  ║
+║  ▶ 5. Crane       ║  • Status information                                    ║
+║  ▶ 6. Tracking    ║  • Future: embedded plots                                ║
+║                   ║                                                          ║
+║  ✕ Quit           ║  80% of vertical space                                   ║
+║                   ║                                                          ║
+║     30% width     ║                   70% width                              ║
+║                   ║                                                          ║
+╠═══════════════════╬══════════════════════════════════════════════════════════╣
+║  Devices          ║              Status Log                                  ║
+║                   ║                                                          ║
+║  ● robot1         ║  ▌ [17:24:01] Timestamped events                         ║
+║    192.168.1.101  ║  ▌ [17:24:15] Color-coded messages                       ║
+║  ● robot2         ║                                                          ║
+║    192.168.1.102  ║  20% of vertical space                                   ║
+║     30% width     ║                   70% width                              ║
+╚═══════════════════╩══════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════════════════════
+                              MENU STRUCTURE
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Connect
+   └─ Discover robots
+   └─ Select robots
+   └─ Update code
+
+2. Component
+   └─ Select component
+   └─ Change component
+
+3. Assembly Robot
+   └─ Engage clamps         ← SIMPLIFIED (2 items only)
+   └─ Disengage clamps
+
+4. Adhesive Robot
+   └─ Manual control
+   └─ Run profile
+   └─ View history
+
+5. Crane                    ← MOVED (was #6, now #5)
+   └─ Position crane
+   └─ Home position
+   └─ Emergency stop
+
+6. Tracking                 ← MOVED (was #5, now #6)
+   └─ Combined tracking     ← SIMPLIFIED (1 item only)
+
+✕ Quit
+
+═══════════════════════════════════════════════════════════════════════════════
+                           KEY IMPROVEMENTS
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ MORE VERTICAL SPACE
+   80% top area (up from 75%) = More room for plots, controls, data
+
+✅ CLEANER BOTTOM PANEL  
+   20% bottom area (down from 25%) = Still shows all info, less clutter
+
+✅ SIMPLIFIED ASSEMBLY MENU
+   Only "Engage" and "Disengage" clamps (removed "Position crane")
+
+✅ SIMPLIFIED TRACKING MENU
+   Only "Combined tracking" (removed Aruco-only and Holes-only)
+
+✅ LOGICAL MENU ORDER
+   Crane moved before Tracking (setup crane → then track)
+
+✅ MAINTAINED VISUAL STYLE
+   Same clean, non-fancy terminal UI with great colors
+
+═══════════════════════════════════════════════════════════════════════════════
+                         KEYBOARD SHORTCUTS
+═══════════════════════════════════════════════════════════════════════════════
+
+  ↑/↓        Navigate menu
+  Enter      Select item / Expand section
+  Tab        Next item
+  R          Refresh devices
+  Q          Quit application
+  Ctrl+C     Force quit
+
+═══════════════════════════════════════════════════════════════════════════════
+                            READY TO USE!
+═══════════════════════════════════════════════════════════════════════════════
+
+Run:  ./run_dashboard.sh
+or:   python Dashboard.py
+

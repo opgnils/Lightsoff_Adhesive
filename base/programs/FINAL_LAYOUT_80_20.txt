@@ -1,0 +1,140 @@
+═══════════════════════════════════════════════════════════════════════════════
+                    LIGHTSOFF DASHBOARD - FINAL LAYOUT
+═══════════════════════════════════════════════════════════════════════════════
+
+LAYOUT PROPORTIONS:
+  • Horizontal: 80% (left) / 20% (right)
+  • Vertical:   75% (top)  / 25% (bottom)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+╔══════════════════════════════════════════════════════════════╦═══════════════╗
+║                    LightsOff Control System                  ║               ║
+╠══════════════════════════════════════════════════════════════╬═══════════════╣
+║                                                              ║               ║
+║           Control System & Operation View                    ║               ║
+║                                                              ║               ║
+║  Menu:                       Operation View:                 ║               ║
+║  ▶ 1. Connect                [Dynamic content]               ║   Operation   ║
+║  ▶ 2. Component              [Shows details, controls,       ║     Info      ║
+║  ▶ 3. Assembly Robot         status, and future plots        ║               ║
+║  ▶ 4. Adhesive Robot         based on menu selection]        ║    View       ║
+║  ▶ 5. Crane                                                  ║               ║
+║  ▶ 6. Tracking               [Wide working area with         ║   (20% of     ║
+║  ✕ Quit                      80% of horizontal space]        ║    width)     ║
+║                                                              ║               ║
+║                              75% of vertical space           ║               ║
+║                                                              ║               ║
+║                      80% of horizontal space                 ║               ║
+╠══════════════════════════════════════════════════════════════╬═══════════════╣
+║                                                              ║               ║
+║  Devices                          Status Log                 ║               ║
+║                                                              ║               ║
+║  ● robot1                         ▌ [17:24:01] Events        ║   Status      ║
+║    192.168.1.101                  ▌ [17:24:15] Messages      ║               ║
+║  ● robot2                                                    ║   Log         ║
+║    192.168.1.102                  25% of vertical space      ║               ║
+║                                                              ║   (20% of     ║
+║              80% of horizontal space                         ║    width)     ║
+╚══════════════════════════════════════════════════════════════╩═══════════════╝
+
+═══════════════════════════════════════════════════════════════════════════════
+                              LAYOUT BREAKDOWN
+═══════════════════════════════════════════════════════════════════════════════
+
+TOP ROW (75% height):
+  ┌──────────────────────────────────────────┬────────────┐
+  │  Control System & Operation View         │  Operation │
+  │  (80% width)                             │  Info      │
+  │                                          │  (20%)     │
+  │  • Menu on left side                     │            │
+  │  • Operation content fills rest          │            │
+  └──────────────────────────────────────────┴────────────┘
+
+BOTTOM ROW (25% height):
+  ┌──────────────────────────────────────────┬────────────┐
+  │  Devices & Status Log                    │  Status    │
+  │  (80% width)                             │  Log       │
+  │                                          │  (20%)     │
+  │  • Devices on left                       │            │
+  │  • Status log fills rest                 │            │
+  └──────────────────────────────────────────┴────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+                              MENU STRUCTURE
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Connect
+   └─ Discover robots
+   └─ Select robots
+   └─ Update code
+
+2. Component
+   └─ Select component
+   └─ Change component
+
+3. Assembly Robot
+   └─ Engage clamps
+   └─ Disengage clamps
+
+4. Adhesive Robot
+   └─ Manual control
+   └─ Run profile
+   └─ View history
+
+5. Crane
+   └─ Position crane
+   └─ Home position
+   └─ Emergency stop
+
+6. Tracking
+   └─ Combined tracking
+
+✕ Quit
+
+═══════════════════════════════════════════════════════════════════════════════
+                           KEY FEATURES
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ WIDE MAIN AREA (80%)
+   Control System & Operation View get 80% of screen width
+   Perfect for showing plots, data, and controls side-by-side
+
+✅ COMPACT INFO COLUMN (20%)
+   Right column shows supplementary operation info
+   Keeps important context visible without taking too much space
+
+✅ BALANCED VERTICAL SPLIT (75/25)
+   75% for main operations, 25% for devices & status log
+   Good balance between working area and monitoring
+
+✅ LOGICAL LAYOUT
+   • Main workflow area is large (left 80%)
+   • Context info on right (20%)
+   • Device status and logs at bottom (25%)
+
+✅ MAINTAINED VISUAL STYLE
+   Same clean, non-fancy terminal UI with great colors
+
+═══════════════════════════════════════════════════════════════════════════════
+                         KEYBOARD SHORTCUTS
+═══════════════════════════════════════════════════════════════════════════════
+
+  ↑/↓        Navigate menu
+  Enter      Select item / Expand section
+  Tab        Next item
+  R          Refresh devices
+  Q          Quit application
+  Ctrl+C     Force quit
+
+═══════════════════════════════════════════════════════════════════════════════
+                            READY TO USE!
+═══════════════════════════════════════════════════════════════════════════════
+
+Run:  ./run_dashboard.sh
+or:   python Dashboard.py
+
+This layout gives you:
+  • Maximum working space (80% width x 75% height)
+  • Compact info panel on the right (20% width)
+  • Device monitoring at the bottom (25% height)

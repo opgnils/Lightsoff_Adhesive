@@ -1,0 +1,152 @@
+═══════════════════════════════════════════════════════════════════════════════
+                    LIGHTSOFF DASHBOARD - FINAL LAYOUT
+═══════════════════════════════════════════════════════════════════════════════
+
+LAYOUT PROPORTIONS:
+  • Horizontal: 20% (left) / 80% (right)
+  • Vertical:   75% (top)  / 25% (bottom)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+╔═════════════╦════════════════════════════════════════════════════════════════╗
+║   LightsOff ║                      Control System                            ║
+╠═════════════╬════════════════════════════════════════════════════════════════╣
+║             ║                                                                ║
+║   Control   ║              Operation View                                    ║
+║   System    ║                                                                ║
+║             ║  [Large working area with 80% of horizontal space]             ║
+║  ▶ 1. Con   ║                                                                ║
+║  ▶ 2. Com   ║  • Shows operation details                                     ║
+║  ▶ 3. Ass   ║  • Interactive controls                                        ║
+║  ▶ 4. Adh   ║  • Status information                                          ║
+║  ▶ 5. Cra   ║  • Future: embedded plots                                      ║
+║  ▶ 6. Tra   ║                                                                ║
+║             ║  Perfect for displaying graphs, camera feeds,                  ║
+║  ✕ Quit     ║  data tables, and control interfaces                           ║
+║             ║                                                                ║
+║             ║                                                                ║
+║   20%       ║                        80% width                               ║
+║   width     ║                        75% height                              ║
+╠═════════════╬════════════════════════════════════════════════════════════════╣
+║             ║                                                                ║
+║  Devices    ║              Status Log                                        ║
+║             ║                                                                ║
+║  ● robot1   ║  ▌ [17:23:45] Dashboard started                                ║
+║    192...   ║  ▌ [17:24:01] Loaded 3 device(s) from configuration            ║
+║  ● robot2   ║  ▌ [17:24:15] Discovering devices...                           ║
+║    192...   ║  ▌ [17:24:18] Found 3 device(s) in configuration               ║
+║  ○ robot3   ║  ▌ [17:24:20] Checking online status...                        ║
+║             ║  ▌ [17:24:23] 2 device(s) online                               ║
+║   20%       ║                        80% width                               ║
+║   width     ║                        25% height                              ║
+╚═════════════╩════════════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════════════════════
+                              LAYOUT BREAKDOWN
+═══════════════════════════════════════════════════════════════════════════════
+
+TOP ROW (75% height):
+  ┌──────┬─────────────────────────────────────────────────────┐
+  │ Menu │  Operation View (80% width)                         │
+  │ 20%  │  • Large area for content                           │
+  │      │  • Perfect for plots, controls, data                │
+  └──────┴─────────────────────────────────────────────────────┘
+
+BOTTOM ROW (25% height):
+  ┌──────┬─────────────────────────────────────────────────────┐
+  │Device│  Status Log (80% width)                             │
+  │ 20%  │  • Wide log area                                    │
+  │      │  • More space for messages                          │
+  └──────┴─────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+                              MENU STRUCTURE
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Connect
+   └─ Discover robots
+   └─ Select robots
+   └─ Update code
+
+2. Component
+   └─ Select component
+   └─ Change component
+
+3. Assembly Robot
+   └─ Engage clamps
+   └─ Disengage clamps
+
+4. Adhesive Robot
+   └─ Manual control
+   └─ Run profile
+   └─ View history
+
+5. Crane
+   └─ Position crane
+   └─ Home position
+   └─ Emergency stop
+
+6. Tracking
+   └─ Combined tracking
+
+✕ Quit
+
+═══════════════════════════════════════════════════════════════════════════════
+                           KEY FEATURES
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ COMPACT MENU (20% left)
+   Control System menu takes minimal space
+   Clean, organized vertical menu
+
+✅ HUGE OPERATION VIEW (80% right)
+   Maximum space for:
+   • Embedded matplotlib plots
+   • Camera feeds
+   • Data tables
+   • Interactive controls
+   • Real-time graphs
+
+✅ BALANCED VERTICAL SPLIT (75/25)
+   75% for main operations
+   25% for devices & status log
+   Good balance between work area and monitoring
+
+✅ WIDE STATUS LOG (80%)
+   More space for log messages
+   Better readability for timestamped events
+
+✅ LOGICAL LAYOUT
+   • Narrow menu on left (20%)
+   • Wide work area on right (80%)
+   • Bottom bar for monitoring (25%)
+
+✅ MAINTAINED VISUAL STYLE
+   Same clean, non-fancy terminal UI with great colors
+
+═══════════════════════════════════════════════════════════════════════════════
+                         KEYBOARD SHORTCUTS
+═══════════════════════════════════════════════════════════════════════════════
+
+  ↑/↓        Navigate menu
+  Enter      Select item / Expand section
+  Tab        Next item
+  R          Refresh devices
+  Q          Quit application
+  Ctrl+C     Force quit
+
+═══════════════════════════════════════════════════════════════════════════════
+                            READY TO USE!
+═══════════════════════════════════════════════════════════════════════════════
+
+Run:  ./run_dashboard.sh
+or:   python Dashboard.py
+
+This layout gives you:
+  • Compact menu sidebar (20% width)
+  • Maximum work area (80% width x 75% height)
+  • Device monitoring at bottom (25% height)
+  • Wide status log (80% width)
+
+Perfect for displaying plots, camera feeds, and data while keeping
+the menu compact and monitoring info always visible!

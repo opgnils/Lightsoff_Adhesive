@@ -1,0 +1,135 @@
+╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║                                         LightsOff Control System                                             ║
+╠════════════════════════╦═════════════════════════════════════════════════════════════════════════════════════╣
+║                        ║                                                                                     ║
+║   Control System       ║   Welcome to LightsOff Control System                                               ║
+║                        ║                                                                                     ║
+║   ▶ 1. Connect         ║   Select an option from the Control System menu on the left.                        ║
+║   ▼ 2. Component       ║                                                                                     ║
+║       • Select         ║   Available operations:                                                             ║
+║       • Change         ║     • Connect to remote robots                                                      ║
+║   ▶ 3. Assembly Robot  ║     • Configure components for tracking                                            ║
+║   ▼ 4. Adhesive Robot  ║     • Control assembly robots (engage/disengage clamps)                             ║
+║       • Manual control ║     • Control adhesive robots                                                       ║
+║       • Run profile    ║     • Position and control crane                                                    ║
+║       • View history   ║     • Run combined tracking operations                                              ║
+║   ▼ 5. Crane           ║                                                                                     ║
+║       • Position crane ║   Press R to refresh devices | Press Q to quit                                      ║
+║       • Home position  ║                                                                                     ║
+║       • Emergency stop ║                                                                                     ║
+║   ▶ 6. Tracking        ║                                                                                     ║
+║                        ║                                                                                     ║
+║   ✕ Quit               ║                                                                                     ║
+║                        ║                                                                                     ║
+║                        ║                                                                                     ║
+║                        ║                                                                                     ║
+║                        ║                                                                                     ║
+║                        ║                                                                                     ║
+║      30% width         ║                             70% width                                               ║
+║      80% height        ║                             80% height                                              ║
+╠════════════════════════╬═════════════════════════════════════════════════════════════════════════════════════╣
+║   Devices              ║   Status Log                                                                        ║
+║                        ║                                                                                     ║
+║   ● robot1             ║   ▌ [17:23:45] Dashboard started                                                    ║
+║     192.168.1.101      ║   ▌ [17:24:01] Loaded 3 device(s) from configuration                                ║
+║   ● robot2             ║   ▌ [17:24:15] Discovering devices...                                               ║
+║     192.168.1.102      ║   ▌ [17:24:18] Found 3 device(s) in configuration                                   ║
+║   ○ robot3 (offline)   ║                                                                                     ║
+║     192.168.1.103      ║      30% width                          70% width                                   ║
+║      30% width         ║                             20% height                                              ║
+║      20% height        ║                                                                                     ║
+╚════════════════════════╩═════════════════════════════════════════════════════════════════════════════════════╝
+
+
+EXAMPLE: When "6. Tracking" is expanded and "Combined tracking" is selected
+╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║                                         LightsOff Control System                                             ║
+╠════════════════════════╦═════════════════════════════════════════════════════════════════════════════════════╣
+║                        ║                                                                                     ║
+║   Control System       ║   Combined Aruco + Holes Tracking                                                   ║
+║                        ║                                                                                     ║
+║   ▶ 1. Connect         ║   Initiating Combined Aruco + Holes tracking mode...                                ║
+║   ▶ 2. Component       ║                                                                                     ║
+║   ▶ 3. Assembly Robot  ║   Tracking will:                                                                    ║
+║   ▶ 4. Adhesive Robot  ║     • Start camera feeds on remote robots                                           ║
+║   ▶ 5. Crane           ║     • Process images for detection                                                  ║
+║   ▼ 6. Tracking        ║     • Stream position data via UDP                                                  ║
+║       • Combined       ║     • Update live plots                                                             ║
+║                        ║                                                                                     ║
+║   ✕ Quit               ║   Press Q to stop tracking                                                          ║
+║                        ║                                                                                     ║
+║                        ║   Full tracking integration pending...                                              ║
+║                        ║                                                                                     ║
+║                        ║                                                                                     ║
+║                        ║                                                                                     ║
+║                        ║                                                                                     ║
+║                        ║                                                                                     ║
+║                        ║                                                                                     ║
+║                        ║                                                                                     ║
+║                        ║                                                                                     ║
+╠════════════════════════╬═════════════════════════════════════════════════════════════════════════════════════╣
+║   Devices              ║   Status Log                                                                        ║
+║                        ║                                                                                     ║
+║   ● robot1             ║   ▌ [17:23:45] Dashboard started                                                    ║
+║     192.168.1.101      ║   ▌ [17:24:01] Loaded 3 device(s) from configuration                                ║
+║   ● robot2             ║   ▌ [17:24:15] Device discovery complete                                            ║
+║     192.168.1.102      ║   ▌ [17:25:30] Starting Combined Aruco + Holes tracking (stub)                      ║
+║   ○ robot3 (offline)   ║                                                                                     ║
+║     192.168.1.103      ║                                                                                     ║
+╚════════════════════════╩═════════════════════════════════════════════════════════════════════════════════════╝
+
+
+MENU STRUCTURE UPDATED:
+
+1. Connect
+   • Discover robots
+   • Select robots
+   • Update code
+
+2. Component
+   • Select component
+   • Change component
+
+3. Assembly Robot
+   • Engage clamps
+   • Disengage clamps
+
+4. Adhesive Robot
+   • Manual control
+   • Run profile
+   • View history
+
+5. Crane
+   • Position crane
+   • Home position
+   • Emergency stop
+
+6. Tracking
+   • Combined tracking
+
+
+COLOR SCHEME (as rendered in terminal):
+
+Background Colors:
+  Main background: Dark blue-gray (#1a1b26)
+  Left column: Slightly darker (#16161e)
+
+Border Colors:
+  Border lines: Purple-gray (#44475a)
+  Border titles: Pink/Magenta (#ff79c6)
+
+Text Colors:
+  Primary text: Light blue-gray (#a9b1d6)
+  Selected menu item: Dark on pink background
+  Dimmed text: Medium gray (#6272a4)
+
+Status Indicators:
+  ● Online (green): #50fa7b
+  ○ Offline (gray): #6272a4
+  ▌ Log marker (pink): #ff79c6
+
+Log Message Colors:
+  Info: Pink (#ff79c6)
+  Success: Green (#50fa7b)
+  Warning: Yellow (#f1fa8c)
+  Error: Red (#ff5555)
