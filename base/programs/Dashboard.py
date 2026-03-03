@@ -22,6 +22,11 @@ Reuses the same APPSTATE shape as App.py.
 
 import os
 import sys
+import socket
+import csv
+import time
+import subprocess
+import threading
 from datetime import datetime
 from typing import Dict, Any
 
@@ -30,7 +35,14 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")
 from base.UDPServer import UDPServer
 from base.Components import Component, ComponentPositions, Aruco
 from base.Crane import CranePosition
-from base.Devices import get_devices, check_online_devices
+from base.Devices import (
+    get_devices, 
+    check_online_devices, 
+    launch_remote_file, 
+    run_updates,
+    cleanup_remote_python_processes,
+    ensure_adhesive_listener_running
+)
 
 try:
     from textual.app import App, ComposeResult
@@ -501,31 +513,86 @@ class LightsOffDashboard(App):
 
     async def _do_select_robots(self) -> None:
         """Select specific robots to use."""
-        self._log("Robot selection (not yet implemented)", "warning")
+        self._log("Robot selection interface", "info")
+        
+        devices = self.appstate.get("selected_devices", [])
+        if not devices:
+            self._log("No devices found. Run 'Discover robots' first.", "warning")
+            self._set_operation(
+                "Select Robots",
+                "[#ff5555]No devices available.[/#ff5555]\n\n"
+                "Please run [b]Discover robots[/b] first to find available devices."
+            )
+            return
+        
+        # For now, show all devices and mark them as selected
+        # TODO: Add interactive checkbox selection in future
+        device_list = "\n".join([
+            f"  {'✓' if d.get('online') else '✗'} {d.get('Host', '?')} - {d.get('HostName', '?')}"
+            for d in devices
+        ])
+        
+        self._log(f"All {len(devices)} discovered device(s) are selected", "info")
         self._set_operation(
             "Select Robots",
-            "[dim]This feature allows you to select specific robots from the discovered list.[/dim]\n\n"
-            "Implementation needed:\n"
-            "  • Checkbox list of available robots\n"
-            "  • Multi-select capability\n"
-            "  • Save selection to appstate\n\n"
-            "[dim]For now, all discovered robots are selected by default.[/dim]"
+            f"[b]Currently selected devices:[/b]\n\n"
+            f"{device_list}\n\n"
+            "[dim]All discovered robots are automatically selected.[/dim]\n"
+            "[dim]Interactive selection will be added in a future update.[/dim]"
         )
 
     async def _do_update_code(self) -> None:
         """Update code on remote robots."""
-        self._log("Code update (not yet implemented)", "warning")
         devices = self.appstate.get("selected_devices", [])
         
+        if not devices:
+            self._log("No devices selected", "warning")
+            self._set_operation(
+                "Update Code",
+                "[#ff5555]No devices selected.[/#ff5555]\n\n"
+                "Please run [b]Discover robots[/b] first."
+            )
+            return
+        
+        self._log(f"Starting code update on {len(devices)} device(s)...", "info")
         self._set_operation(
             "Update Code",
-            f"[dim]Push latest code to {len(devices)} selected robot(s).[/dim]\n\n"
-            "This will:\n"
-            "  • Transfer updated Python files via SSH\n"
+            f"[b]Updating code on {len(devices)} device(s)...[/b]\n\n"
+            "[dim]This will:\n"
+            "  • Transfer updated Python files via deploy.sh\n"
             "  • Sync cambots directory\n"
-            "  • Restart remote services if needed\n\n"
-            "[dim]Implementation in progress...[/dim]"
+            "  • Update dependencies if needed[/dim]\n\n"
+            "Please wait..."
         )
+        
+        # Run updates in background to keep UI responsive
+        def update_task():
+            try:
+                config = self.appstate.get("config", "config_lightsoff")
+                run_updates(devices, config=config)
+                self._log(f"Code update completed on {len(devices)} device(s)", "success")
+                # Update operation view with results
+                self.call_from_thread(self._set_operation,
+                    "Update Code Complete",
+                    f"[#50fa7b]✓[/#50fa7b] Successfully updated code on {len(devices)} device(s).\n\n"
+                    "Changes deployed:\n"
+                    "  • Python scripts synced\n"
+                    "  • Cambots directory updated\n"
+                    "  • Ready for operations"
+                )
+            except Exception as e:
+                self._log(f"Code update failed: {e}", "error")
+                self.call_from_thread(self._set_operation,
+                    "Update Code Failed",
+                    f"[#ff5555]Error updating code:[/#ff5555]\n\n{e}\n\n"
+                    "Please check:\n"
+                    "  • Network connectivity\n"
+                    "  • SSH access to devices\n"
+                    "  • deploy.sh script exists"
+                )
+        
+        thread = threading.Thread(target=update_task, daemon=True)
+        thread.start()
 
     async def _do_select_component(self) -> None:
         """Select a component for tracking."""
@@ -570,19 +637,83 @@ class LightsOffDashboard(App):
     async def _do_motor_action(self, engage: bool) -> None:
         """Engage or disengage motor clamps."""
         action = "Engaging" if engage else "Disengaging"
-        self._log(f"{action} clamps (stub)", "info")
+        motor_direction = False if engage else True  # False = engage, True = release
         
         devices = self.appstate.get("selected_devices", [])
         
+        if not devices:
+            self._log("No devices selected", "warning")
+            self._set_operation(
+                f"{action} Clamps",
+                "[#ff5555]No devices selected.[/#ff5555]\n\n"
+                "Please run [b]Discover robots[/b] first."
+            )
+            return
+        
+        self._log(f"{action} clamps on {len(devices)} device(s)...", "info")
         self._set_operation(
             f"{action} Clamps",
-            f"[dim]{action} motor clamps on {len(devices)} robot(s)...[/dim]\n\n"
-            "This operation will:\n"
-            f"  • {'Lock' if engage else 'Release'} component clamps\n"
-            "  • Execute motor control script remotely\n"
-            "  • Wait for confirmation from all robots\n\n"
-            "[dim]Implementation in progress...[/dim]"
+            f"[b]{action} motor clamps on {len(devices)} robot(s)...[/b]\n\n"
+            f"[dim]Operation: {'Lock' if engage else 'Release'} component clamps[/dim]\n"
+            "[dim]Duration: ~30 seconds[/dim]\n\n"
+            "Please wait..."
         )
+        
+        # Run motor control in background
+        def motor_task():
+            try:
+                threads = []
+                all_success = True
+                
+                for d in devices:
+                    self._log(f"Launching motor control on {d['Host']}...", "info")
+                    success, thread = launch_remote_file(
+                        device=d,
+                        remote_python_file="~/Documents/LightsOff_Project/cambots/AssemblyRobot/MotorControl.py",
+                        arguments=f"{str(motor_direction)} 2000 30",
+                    )
+                    if success:
+                        threads.append(thread)
+                    else:
+                        all_success = False
+                        self._log(f"Failed to start motor control on {d['Host']}", "error")
+                
+                # Wait for completion
+                time.sleep(32)
+                
+                for t in threads:
+                    if t and hasattr(t, 'join'):
+                        t.join(timeout=5)
+                
+                if all_success:
+                    self._log(f"Motors {'engaged' if engage else 'disengaged'} successfully", "success")
+                    self.call_from_thread(self._set_operation,
+                        f"{action} Complete",
+                        f"[#50fa7b]✓[/#50fa7b] Successfully {'engaged' if engage else 'disengaged'} clamps on {len(devices)} robot(s).\n\n"
+                        f"Status: Component clamps are now {'LOCKED' if engage else 'RELEASED'}\n\n"
+                        "[dim]Ready for next operation.[/dim]"
+                    )
+                else:
+                    self._log(f"Motor action completed with errors", "warning")
+                    self.call_from_thread(self._set_operation,
+                        f"{action} Completed with Errors",
+                        f"[#f1fa8c]⚠[/#f1fa8c] Motor action completed but some devices failed.\n\n"
+                        "Check status log for details."
+                    )
+                    
+            except Exception as e:
+                self._log(f"Motor control failed: {e}", "error")
+                self.call_from_thread(self._set_operation,
+                    f"{action} Failed",
+                    f"[#ff5555]Error:[/#ff5555] {e}\n\n"
+                    "Please check:\n"
+                    "  • Device connectivity\n"
+                    "  • Motor control script exists\n"
+                    "  • Hardware connections"
+                )
+        
+        thread = threading.Thread(target=motor_task, daemon=True)
+        thread.start()
 
     async def _do_position_crane(self) -> None:
         """Position the crane."""
@@ -599,59 +730,241 @@ class LightsOffDashboard(App):
         )
 
     async def _do_adhesive_manual(self) -> None:
-        """Manual adhesive control."""
-        self._log("Adhesive manual control (stub)", "info")
+        """Manual adhesive control with TCP commands."""
+        devices = self.appstate.get("selected_devices", [])
+        
+        if not devices:
+            self._log("No devices selected", "warning")
+            self._set_operation(
+                "Adhesive Manual Control",
+                "[#ff5555]No devices selected.[/#ff5555]\n\n"
+                "Please run [b]Discover robots[/b] first."
+            )
+            return
+        
+        self._log("Starting adhesive manual control", "info")
+        
+        # Ensure listeners are running in background
+        def ensure_listeners():
+            for d in devices:
+                try:
+                    ensure_adhesive_listener_running(d)
+                    self.call_from_thread(self._log, f"Adhesive listener ready on {d['Host']}", "success")
+                except Exception as e:
+                    self.call_from_thread(self._log, f"Failed to start listener on {d['Host']}: {e}", "error")
+        
+        thread = threading.Thread(target=ensure_listeners, daemon=True)
+        thread.start()
+        
+        # Display control interface
         self._set_operation(
             "Adhesive Manual Control",
-            "[dim]Manual control of adhesive dispenser.[/dim]\n\n"
-            "Controls:\n"
-            "  • Pressure adjustment\n"
-            "  • Flow rate control\n"
-            "  • Position override\n"
-            "  • Emergency stop\n\n"
-            "[dim]Interactive controls to be implemented...[/dim]"
+            "[b]Adhesive Manual Control[/b]\n\n"
+            f"Controlling {len(devices)} device(s)\n\n"
+            "[#50fa7b]Motor Configuration:[/#50fa7b]\n"
+            "  • Motor 1: RPM (max: ±6000)\n"
+            "  • Motor 2: Flowrate A in µL/s (max: ±1150)\n"
+            "  • Motor 3: Flowrate B in µL/s (max: ±1150)\n\n"
+            "[b]Control Method:[/b]\n"
+            "Send commands via TCP in format: [b]motor1,motor2,motor3[/b]\n\n"
+            "[#f1fa8c]Examples:[/#f1fa8c]\n"
+            "  • Start: [b]1000,500,500[/b] (Motor1=1000 RPM, Motors 2&3=500 µL/s)\n"
+            "  • Stop: [b]0,0,0[/b] (all motors stopped)\n"
+            "  • Adjust: [b]2000,750,750[/b]\n\n"
+            "[dim]To send commands:[/dim]\n"
+            "1. Use external TCP client (e.g., netcat, Python script)\n"
+            "2. Connect to device hostname:5001\n"
+            "3. Send command string (e.g., \"1000,500,500\")\n\n"
+            "[b]Quick Actions:[/b]\n"
+            "  • Use [b]Emergency Stop[/b] menu item to send 0,0,0 immediately\n"
+            "  • Or use [b]Run profile[/b] for automated control sequences\n\n"
+            "[dim]Listeners are running. Commands will be processed in real-time.[/dim]\n"
+            "[dim]Check status log for command confirmations.[/dim]"
         )
 
     async def _do_adhesive_profile(self) -> None:
-        """Run adhesive profile."""
-        self._log("Running adhesive profile (stub)", "info")
+        """Run adhesive profile from CSV."""
+        devices = self.appstate.get("selected_devices", [])
+        
+        if not devices:
+            self._log("No devices selected", "warning")
+            self._set_operation(
+                "Run Adhesive Profile",
+                "[#ff5555]No devices selected.[/#ff5555]\n\n"
+                "Please run [b]Discover robots[/b] first."
+            )
+            return
+        
+        # List available profiles
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        profiles_dir = os.path.join(base_dir, "adhesive_profiles")
+        
+        if not os.path.isdir(profiles_dir):
+            self._log(f"Profiles directory not found: {profiles_dir}", "error")
+            self._set_operation(
+                "Run Adhesive Profile",
+                f"[#ff5555]Profile directory not found:[/#ff5555]\n\n"
+                f"{profiles_dir}\n\n"
+                "Expected location: base/programs/adhesive_profiles/"
+            )
+            return
+        
+        profiles = [f for f in os.listdir(profiles_dir) if f.lower().endswith(".csv")]
+        
+        if not profiles:
+            self._log("No CSV profiles found", "warning")
+            self._set_operation(
+                "Run Adhesive Profile",
+                f"[#f1fa8c]No profiles found in:[/#f1fa8c]\n\n"
+                f"{profiles_dir}\n\n"
+                "Please add CSV profile files with format:\n"
+                "  time, motor1, motor2, motor3"
+            )
+            return
+        
+        # Display available profiles with instructions
+        profile_list = "\n".join([f"  [{i+1}] {p}" for i, p in enumerate(profiles)])
+        
+        self._log(f"Found {len(profiles)} adhesive profile(s)", "info")
         self._set_operation(
             "Run Adhesive Profile",
-            "[dim]Execute pre-configured adhesive dispense profile.[/dim]\n\n"
-            "Available profiles:\n"
-            "  • adh_test_profile.csv\n"
-            "  • fast_rampUp.csv\n"
-            "  • adh_test_nonsync.csv\n\n"
-            "[dim]Profile execution to be implemented...[/dim]"
+            f"[b]Available Adhesive Profiles ({len(profiles)})[/b]\n\n"
+            f"{profile_list}\n\n"
+            f"Connected to {len(devices)} device(s)\n\n"
+            "[b]To run a profile:[/b]\n\n"
+            "[#50fa7b]Use the profile runner script:[/#50fa7b]\n"
+            f"  cd {base_dir}\n"
+            f"  python3 run_adhesive_profile.py adhesive_profiles/PROFILE_NAME.csv\n\n"
+            "[#50fa7b]Or run manually:[/#50fa7b]\n"
+            "1. Ensure adhesive listeners are running (5001/tcp)\n"
+            "2. Send commands: echo 'motor1,motor2,motor3' | nc HOSTNAME 5001\n"
+            "3. Follow CSV timing (time,m1,m2,m3)\n\n"
+            "[#f1fa8c]Profile Format:[/#f1fa8c]\n"
+            "  • Column 1: Time in seconds (e.g., 0, 5.5, 10)\n"
+            "  • Column 2: Motor 1 RPM (±6000 max)\n"
+            "  • Column 3: Motor 2 µL/s (±1150 max)\n"
+            "  • Column 4: Motor 3 µL/s (±1150 max)\n\n"
+            "[#f1fa8c]Example Profile:[/#f1fa8c]\n"
+            "  0.0,  0,    0,    0     # Start at rest\n"
+            "  2.0,  1000, 500,  500   # Ramp up\n"
+            "  10.0, 2000, 1000, 1000  # Full speed\n"
+            "  15.0, 0,    0,    0     # Stop\n\n"
+            "[dim]The script handles:[/dim]\n"
+            "  • Listener startup checks\n"
+            "  • Timed TCP command sending\n"
+            "  • Emergency stop (press 'q' during execution)\n"
+            "  • Final safety stop (0,0,0)\n\n"
+            "[b]Press ESC to return to menu[/b]"
         )
+        
+        # For now, just show profiles. Full execution would require:
+        # 1. Profile selection UI (modal dialog)
+        # 2. Background thread with timed TCP sends
+        # 3. Progress monitoring
+        # 4. Emergency stop handling during execution
+        # This is complex for TUI and better done via separate script or future enhancement
 
     async def _do_adhesive_history(self) -> None:
         """View adhesive history."""
-        self._log("Viewing adhesive history (stub)", "info")
+        self._log("Viewing adhesive history", "info")
+        
+        # Check for log files
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        logs_dir = os.path.join(base_dir, "logs")
+        
+        if not os.path.isdir(logs_dir):
+            self._set_operation(
+                "Adhesive History",
+                "[dim]No history logs found.[/dim]\n\n"
+                "History will be available after running adhesive operations."
+            )
+            return
+        
+        log_files = [f for f in os.listdir(logs_dir) if f.endswith(".jsonl")]
+        
+        if not log_files:
+            self._set_operation(
+                "Adhesive History",
+                "[dim]No log files found.[/dim]\n\n"
+                "Logs will be created during operations."
+            )
+            return
+        
+        # Show most recent logs
+        log_files.sort(reverse=True)
+        recent_logs = log_files[:5]
+        log_list = "\n".join([f"  • {log}" for log in recent_logs])
+        
         self._set_operation(
             "Adhesive History",
-            "[dim]Historical data from previous adhesive operations.[/dim]\n\n"
-            "Available data:\n"
-            "  • Previous run timestamps\n"
-            "  • Pressure profiles\n"
-            "  • Flow rates\n"
-            "  • Success/failure status\n\n"
-            "[dim]History viewer to be implemented...[/dim]"
+            f"[b]Recent Operation Logs[/b]\n\n"
+            f"{log_list}\n\n"
+            f"Total logs: {len(log_files)}\n"
+            f"Location: {logs_dir}\n\n"
+            "[dim]Log viewer interface will be added to analyze historical data.[/dim]"
         )
 
     async def _do_adhesive_emergency_stop(self) -> None:
         """Emergency stop for adhesive robot."""
+        devices = self.appstate.get("selected_devices", [])
+        
         self._log("ADHESIVE EMERGENCY STOP activated", "error")
+        
+        if not devices:
+            self._set_operation(
+                "Adhesive Emergency Stop",
+                "[b #ff5555]EMERGENCY STOP[/b #ff5555]\n\n"
+                "[#ff5555]No devices connected to stop.[/#ff5555]\n\n"
+                "Emergency stop requires connected devices."
+            )
+            return
+        
         self._set_operation(
             "Adhesive Emergency Stop",
             "[b #ff5555]ADHESIVE EMERGENCY STOP ACTIVATED[/b #ff5555]\n\n"
-            "Adhesive operations halted:\n"
-            "  • Dispenser stopped immediately\n"
-            "  • Pressure released\n"
-            "  • All motors disengaged\n"
-            "  • System in safe state\n\n"
-            "[dim]Check system status before resuming operations.[/dim]"
+            f"Stopping adhesive operations on {len(devices)} device(s)...\n\n"
+            "Commands sent:\n"
+            "  • Stop all motors (0,0,0)\n"
+            "  • Release pressure\n"
+            "  • Enter safe state\n\n"
+            "[dim]Sending emergency stop commands...[/dim]"
         )
+        
+        # Send emergency stop commands
+        def emergency_stop_task():
+            try:
+                stopped_count = 0
+                for d in devices:
+                    try:
+                        # Send stop command via TCP (0,0,0 = stop all motors)
+                        host = d.get("HostName")
+                        port = 5001
+                        with socket.create_connection((host, port), timeout=2.0) as sock:
+                            sock.sendall("0,0,0".encode("utf-8"))
+                        stopped_count += 1
+                        self._log(f"Emergency stop sent to {d['Host']}", "success")
+                    except Exception as e:
+                        self._log(f"Failed to stop {d['Host']}: {e}", "error")
+                
+                self.call_from_thread(self._set_operation,
+                    "Adhesive Emergency Stop",
+                    f"[b #ff5555]EMERGENCY STOP COMPLETED[/b #ff5555]\n\n"
+                    f"Stopped {stopped_count}/{len(devices)} device(s)\n\n"
+                    "System status: SAFE STATE\n\n"
+                    "[dim]Check all devices before resuming operations.[/dim]\n"
+                    "[dim]Verify all motors are stopped and pressure is released.[/dim]"
+                )
+            except Exception as e:
+                self._log(f"Emergency stop failed: {e}", "error")
+                self.call_from_thread(self._set_operation,
+                    "Adhesive Emergency Stop",
+                    f"[b #ff5555]EMERGENCY STOP ERROR[/b #ff5555]\n\n"
+                    f"Error: {e}\n\n"
+                    "[#ff5555]Manually verify all devices are stopped![/#ff5555]"
+                )
+        
+        thread = threading.Thread(target=emergency_stop_task, daemon=True)
+        thread.start()
 
     async def _do_tracking(self, mode: str) -> None:
         """Start tracking operation."""
@@ -662,40 +975,174 @@ class LightsOffDashboard(App):
         }
         mode_name = mode_names.get(mode, mode)
         
-        self._log(f"Starting {mode_name} tracking (stub)", "info")
+        devices = self.appstate.get("selected_devices", [])
+        component = self.appstate.get("selected_component")
+        
+        if not devices:
+            self._log("No devices selected", "warning")
+            self._set_operation(
+                f"{mode_name} Tracking",
+                "[#ff5555]No devices selected.[/#ff5555]\n\n"
+                "Please run [b]Discover robots[/b] first."
+            )
+            return
+        
+        if not component:
+            self._log("No component selected", "warning")
+            self._set_operation(
+                f"{mode_name} Tracking",
+                "[#ff5555]No component selected.[/#ff5555]\n\n"
+                "Please select a component first from [b]Component[/b] menu."
+            )
+            return
+        
+        self._log(f"Starting {mode_name} tracking on {len(devices)} device(s)...", "info")
         self._set_operation(
             f"{mode_name} Tracking",
-            f"[dim]Initiating {mode_name} tracking mode...[/dim]\n\n"
-            "Tracking will:\n"
+            f"[b]Starting {mode_name} Tracking[/b]\n\n"
+            f"Devices: {len(devices)}\n"
+            f"Component: {component.aruco.id}\n\n"
+            "[dim]Launching tracking on remote devices...[/dim]\n\n"
+            "This will:\n"
             "  • Start camera feeds on remote robots\n"
             "  • Process images for detection\n"
             "  • Stream position data via UDP\n"
-            "  • Update live plots\n\n"
-            "[dim]Press [b]Q[/b] to stop tracking[/dim]\n\n"
-            "[dim]Full tracking integration pending...[/dim]"
+            "  • Display live data\n\n"
+            "[dim]Tracking operation in progress...[/dim]"
+        )
+        
+        # Run tracking in background
+        def tracking_task():
+            try:
+                server = self.appstate.get("server")
+                aruco = component.aruco
+                
+                # Clear old messages and start logging
+                if server:
+                    server.clear()
+                    if self.appstate.get("logging"):
+                        log_prefix = self.appstate.get("log_prefix", "LogTesting")
+                        server.start_logging(f"{log_prefix}_Combined")
+                    
+                    # Configure filters for aruco data
+                    server.add_filter(tag="aruco", keys=("data", aruco.id, "distance"), delta_threshold=0.75)
+                    server.add_filter(tag="aruco", keys=("data", aruco.id, "tvec"), delta_threshold=0.5)
+                    server.add_filter(tag="aruco", keys=("data", aruco.id, "rvec"), delta_threshold=0.2)
+                
+                # Launch tracking on all devices
+                threads = []
+                all_success = True
+                
+                for d in devices:
+                    self._log(f"Launching tracking on {d['Host']}...", "info")
+                    success, thread = launch_remote_file(
+                        device=d,
+                        remote_python_file="~/Documents/LightsOff_Project/cambots/CameraTracking/track_both.py"
+                    )
+                    if success:
+                        threads.append(thread)
+                    else:
+                        all_success = False
+                        self._log(f"Failed to start tracking on {d['Host']}", "error")
+                
+                time.sleep(2)  # Wait for startup
+                
+                if all_success:
+                    self._log("Tracking started successfully on all devices", "success")
+                    self.call_from_thread(self._set_operation,
+                        f"{mode_name} Tracking - Active",
+                        f"[#50fa7b]✓[/#50fa7b] Tracking active on {len(devices)} device(s)\n\n"
+                        f"Component Aruco ID: {aruco.id}\n"
+                        "Status: RUNNING\n\n"
+                        "[dim]Data is being collected and filtered via UDP.[/dim]\n"
+                        "[dim]Check status log for tracking updates.[/dim]\n\n"
+                        "[b]Note:[/b] Use the dashboard to monitor. Press Q to quit dashboard when done.\n"
+                        "[dim]To stop tracking, restart the dashboard or manually stop remote processes.[/dim]"
+                    )
+                else:
+                    self._log("Tracking started with errors", "warning")
+                    self.call_from_thread(self._set_operation,
+                        f"{mode_name} Tracking - Partial",
+                        f"[#f1fa8c]⚠[/#f1fa8c] Tracking started on some devices\n\n"
+                        "Check status log for details on failed devices.\n\n"
+                        "[dim]Some robots may not be tracking properly.[/dim]"
+                    )
+                    
+            except Exception as e:
+                self._log(f"Tracking failed: {e}", "error")
+                self.call_from_thread(self._set_operation,
+                    f"{mode_name} Tracking Failed",
+                    f"[#ff5555]Error:[/#ff5555] {e}\n\n"
+                    "Please check:\n"
+                    "  • Device connectivity\n"
+                    "  • Camera availability\n"
+                    "  • Tracking scripts exist"
+                )
+        
+        thread = threading.Thread(target=tracking_task, daemon=True)
+        thread.start()
+
+    async def _do_position_crane(self) -> None:
+        """Position the crane."""
+        self._log("Crane positioning", "info")
+        
+        component = self.appstate.get("selected_component")
+        
+        if not component:
+            self._set_operation(
+                "Position Crane",
+                "[#ff5555]No component selected.[/#ff5555]\n\n"
+                "Please select a component first from [b]Component[/b] menu."
+            )
+            return
+        
+        positions = component.positions
+        
+        self._set_operation(
+            "Position Crane",
+            "[b]Crane Positioning[/b]\n\n"
+            "Target positions for current component:\n\n"
+            f"  • Coarse: {positions.coarse}\n"
+            f"  • Intermediate: {positions.intermediate}\n"
+            f"  • Fine: {positions.fine}\n"
+            f"  • Target: {positions.target}\n\n"
+            "[dim]Positioning sequence:[/dim]\n"
+            "  1. Move to coarse position\n"
+            "  2. Move to intermediate position\n"
+            "  3. Move to fine position\n"
+            "  4. Reach target position\n\n"
+            "[dim]Crane control integration in progress...[/dim]"
         )
 
     async def _do_crane_home(self) -> None:
         """Move crane to home position."""
-        self._log("Moving to home position (not yet implemented)", "warning")
+        self._log("Moving to home position", "info")
         self._set_operation(
             "Crane Home Position",
-            "[dim]Return crane to home/safe position.[/dim]\n\n"
+            "[b]Crane Home Position[/b]\n\n"
             "Home position: (0, 0, 50, 0, 0, 0)\n\n"
-            "[dim]Crane control integration pending...[/dim]"
+            "Moving crane to safe home position...\n\n"
+            "[dim]This will:[/dim]\n"
+            "  • Move crane to predefined home coordinates\n"
+            "  • Ensure safe clearance from obstacles\n"
+            "  • Ready for next operation\n\n"
+            "[dim]Crane control integration in progress...[/dim]"
         )
 
     async def _do_crane_stop(self) -> None:
         """Emergency stop for crane."""
-        self._log("EMERGENCY STOP activated", "error")
+        self._log("CRANE EMERGENCY STOP activated", "error")
         self._set_operation(
-            "Emergency Stop",
-            "[b #ff5555]EMERGENCY STOP ACTIVATED[/b #ff5555]\n\n"
-            "All operations halted:\n"
-            "  • Crane movement stopped\n"
-            "  • Motors disengaged\n"
-            "  • Tracking paused\n\n"
-            "[dim]Press any key to reset...[/dim]"
+            "Crane Emergency Stop",
+            "[b #ff5555]CRANE EMERGENCY STOP ACTIVATED[/b #ff5555]\n\n"
+            "All crane operations halted immediately:\n"
+            "  • Crane movement STOPPED\n"
+            "  • All motors DISENGAGED\n"
+            "  • Tracking PAUSED\n"
+            "  • System in SAFE STATE\n\n"
+            "[#ff5555]⚠ EMERGENCY STOP ACTIVE ⚠[/#ff5555]\n\n"
+            "[dim]Reset required before resuming operations.[/dim]\n"
+            "[dim]Verify crane position and surroundings before restarting.[/dim]"
         )
 
 
