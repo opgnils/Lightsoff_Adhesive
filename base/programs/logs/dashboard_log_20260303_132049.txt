@@ -1,0 +1,10 @@
+=== Dashboard Log Started at 2026-03-03 13:20:49 ===
+[2026-03-03 13:20:49] [SUCCESS] Dashboard started
+[2026-03-03 13:20:51] [INFO] Discovering devices...
+[2026-03-03 13:20:51] [SUCCESS] Found 6 device(s) in configuration
+[2026-03-03 13:20:51] [INFO] Checking online status...
+[2026-03-03 13:20:52] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-03 13:20:52] [SUCCESS] 0 device(s) online
+[2026-03-03 13:21:26] [INFO] Shutting down...
+[2026-03-03 13:21:28] [SUCCESS] UDP server closed
+=== Dashboard Log Ended at 2026-03-03 13:21:28 ===

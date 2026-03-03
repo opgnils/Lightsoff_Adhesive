@@ -1,0 +1,36 @@
+=== Dashboard Log Started at 2026-03-03 13:22:06 ===
+[2026-03-03 13:22:06] [SUCCESS] Dashboard started
+[2026-03-03 13:22:07] [INFO] Refreshing device list...
+[2026-03-03 13:22:08] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-03 13:22:08] [SUCCESS] Found 6 device(s), 0 online
+[2026-03-03 13:22:11] [INFO] Opening robot selection interface
+[2026-03-03 13:22:13] [INFO] Discovering devices...
+[2026-03-03 13:22:13] [SUCCESS] Found 6 device(s) in configuration
+[2026-03-03 13:22:13] [INFO] Checking online status...
+[2026-03-03 13:22:14] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-03 13:22:14] [SUCCESS] 0 device(s) online
+[2026-03-03 13:22:16] [INFO] Opening robot selection interface
+[2026-03-03 13:22:18] [INFO] Opening robot selection interface
+[2026-03-03 13:22:19] [INFO] Discovering devices...
+[2026-03-03 13:22:19] [SUCCESS] Found 6 device(s) in configuration
+[2026-03-03 13:22:19] [INFO] Checking online status...
+[2026-03-03 13:22:20] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-03 13:22:20] [SUCCESS] 0 device(s) online
+[2026-03-03 13:22:22] [INFO] Refreshing device list...
+[2026-03-03 13:22:23] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-03 13:22:23] [SUCCESS] Found 6 device(s), 0 online
+[2026-03-03 13:22:27] [INFO] Refreshing device list...
+[2026-03-03 13:22:28] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-03 13:22:28] [SUCCESS] Found 6 device(s), 0 online
+[2026-03-03 13:22:34] [INFO] Opening robot selection interface
+[2026-03-03 13:22:35] [INFO] Refreshing device list...
+[2026-03-03 13:22:36] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-03 13:22:36] [SUCCESS] Found 6 device(s), 0 online
+[2026-03-03 13:22:37] [INFO] Discovering devices...
+[2026-03-03 13:22:37] [SUCCESS] Found 6 device(s) in configuration
+[2026-03-03 13:22:37] [INFO] Checking online status...
+[2026-03-03 13:22:38] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-03 13:22:38] [SUCCESS] 0 device(s) online
+[2026-03-03 13:24:08] [INFO] Shutting down...
+[2026-03-03 13:24:10] [SUCCESS] UDP server closed
+=== Dashboard Log Ended at 2026-03-03 13:24:10 ===
