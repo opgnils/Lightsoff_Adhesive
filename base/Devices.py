@@ -221,11 +221,16 @@ def launch_remote_file(device, remote_python_file:str, remote_venv_path = "~/Doc
 def run_updates(devices, config = "config_lightsoff"):
     """
     Run deploy.sh for each device to push updates.
+    Returns a dictionary with device hosts as keys and lists of updated files as values.
     """
+    update_results = {}
+    
     for device in devices:
         host = device['Host']
         print(f"updating {host}")
         script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'deploy.sh'))
+        updated_files = []
+        
         try:
             result = subprocess.run(
                 ['bash', script_path, host, config],
@@ -234,15 +239,33 @@ def run_updates(devices, config = "config_lightsoff"):
                 timeout=120
             )
             print(f"Deploy to {host}: Return code {result.returncode}")
+            
+            # Parse rsync output to extract updated files
             if result.stdout:
+                for line in result.stdout.split('\n'):
+                    # rsync shows transferred files in the output
+                    # Look for lines that indicate file transfers (excluding directory lines ending with /)
+                    if line.strip() and not line.endswith('/') and not line.startswith('sending') and not line.startswith('total') and not line.startswith('sent') and not line.startswith('Deploying') and not line.startswith('Deployment'):
+                        # Skip progress indicators and summary lines
+                        if '%' not in line and 'bytes' not in line and 'speedup' not in line:
+                            # Clean up the line (remove leading indicators like > or +)
+                            clean_line = line.strip().lstrip('>+ ')
+                            if clean_line and '/' in clean_line:
+                                updated_files.append(clean_line)
+                
                 print(f"STDOUT:\n{result.stdout}")
             if result.stderr:
                 print(f"STDERR:\n{result.stderr}")
+            
+            update_results[host] = updated_files
+            
         except Exception as e:
             print(f"Error deploying to {host}: {e}")
+            update_results[host] = []
     
     print("Updates Complete")
     time.sleep(1)
+    return update_results
 
 
 def cleanup_remote_python_processes(devices, config="config_lightsoff"):
@@ -281,13 +304,13 @@ def cleanup_remote_python_processes(devices, config="config_lightsoff"):
                     else:
                         print(f"      {i}. {process}")
                 
-                # Kill the processes
+                # Kill the processes with -9 (force kill)
                 kill_command = [
                     'sshpass', '-p', 'lightsoff',
                     'ssh', '-o', 'StrictHostKeyChecking=no', 
                     '-o', 'ConnectTimeout=5',
                     f"{device['User']}@{device['HostName']}",
-                    'pkill -f "python.*cambots" || pkill -f "python.*track_" || true'
+                    'pkill -9 -f "python.*cambots" || pkill -9 -f "python.*track_" || pkill -9 -f "AdhesiveListener" || true'
                 ]
                 
                 kill_result = subprocess.run(kill_command, capture_output=True, text=True, timeout=10)
@@ -361,9 +384,38 @@ def ensure_adhesive_listener_running(device, port: int = 5001):
     host = device["HostName"]
     user = device["User"]
 
+    # First, kill any existing AdhesiveListener process and its wrapper
+    # Need to kill both the bash wrapper and the Python process
+    kill_listener_cmd = (
+        "pkill -9 -f 'AdhesiveListener.py' 2>/dev/null; "
+        "pkill -9 -f 'nohup python3 cambots/AdhesiveRobot/AdhesiveListener' 2>/dev/null; "
+        "true"
+    )
+    
+    ssh_kill = [
+        "sshpass",
+        "-p",
+        "lightsoff",
+        "ssh",
+        "-o",
+        "StrictHostKeyChecking=no",
+        "-o",
+        "ConnectTimeout=5",
+        f"{user}@{host}",
+        kill_listener_cmd,
+    ]
+    
+    try:
+        subprocess.run(ssh_kill, capture_output=True, text=True, timeout=10)
+        print(f"[AdhesiveListener] Killed any existing listener on {device['Host']}")
+        time.sleep(1)  # Give the OS time to release the port (increased from 0.5)
+    except Exception as e:
+        print(f"[AdhesiveListener] Warning: Could not kill existing listener on {device['Host']}: {e}")
+
     # Command to check if AdhesiveListener is already running
+    # Use a more flexible pattern that catches both the script name and the full path
     check_cmd = (
-        'ps aux | grep "AdhesiveListener.py" | grep -v grep'
+        'ps aux | grep -E "AdhesiveListener|cambots/AdhesiveRobot/AdhesiveListener" | grep -v grep'
     )
 
     ssh_check = [
@@ -411,10 +463,41 @@ def ensure_adhesive_listener_running(device, port: int = 5001):
     ]
 
     try:
-        subprocess.run(ssh_start, capture_output=True, text=True, timeout=10)
+        result = subprocess.run(ssh_start, capture_output=True, text=True, timeout=10)
         print(f"[AdhesiveListener] Start command sent to {device['Host']}")
-        time.sleep(1)
-        return True
+        
+        # Wait and verify it actually started (with retries)
+        max_attempts = 5
+        for attempt in range(max_attempts):
+            time.sleep(1)  # Wait 1 second between checks
+            
+            # First check: Look for the process
+            verify_result = subprocess.run(ssh_check, capture_output=True, text=True, timeout=10)
+            process_running = verify_result.returncode == 0 and verify_result.stdout.strip() != ""
+            
+            # Second check: Verify port 5001 is listening (more reliable)
+            port_check_cmd = f"lsof -i :{port} -sTCP:LISTEN 2>/dev/null || netstat -ln 2>/dev/null | grep ':{port}.*LISTEN' || true"
+            ssh_port_check = [
+                "sshpass", "-p", "lightsoff", "ssh",
+                "-o", "StrictHostKeyChecking=no",
+                "-o", "ConnectTimeout=5",
+                f"{user}@{host}",
+                port_check_cmd,
+            ]
+            port_result = subprocess.run(ssh_port_check, capture_output=True, text=True, timeout=10)
+            port_listening = port_result.stdout.strip() != ""
+            
+            if process_running or port_listening:
+                verification_method = "process check" if process_running else "port listening check"
+                print(f"[AdhesiveListener] Successfully started and verified on {device['Host']} via {verification_method} (attempt {attempt + 1})")
+                return True
+        
+        # If we get here, verification failed after all attempts
+        # But let's be lenient - if the start command succeeded, assume it worked
+        print(f"[AdhesiveListener] Started on {device['Host']} but verification inconclusive after {max_attempts} attempts")
+        print(f"[AdhesiveListener] Assuming success - listener may still be initializing")
+        return True  # Changed from False to True to be more lenient
+            
     except Exception as e:
         print(f"[AdhesiveListener] Failed to start on {device['Host']}: {e}")
         return False

@@ -1,0 +1,17 @@
+=== Dashboard Log Started at 2026-03-03 17:37:20 ===
+[2026-03-03 17:37:20] [SUCCESS] Dashboard started
+[2026-03-03 17:37:21] [INFO] Refreshing device list...
+[2026-03-03 17:37:22] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-03 17:37:22] [SUCCESS] Found 6 device(s), 1 online
+[2026-03-03 17:37:25] [INFO] Discovering devices...
+[2026-03-03 17:37:25] [SUCCESS] Found 6 device(s) in configuration
+[2026-03-03 17:37:25] [INFO] Checking online status...
+[2026-03-03 17:37:26] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-03 17:37:26] [SUCCESS] 1 device(s) online
+[2026-03-03 17:37:27] [INFO] Opening robot selection interface
+[2026-03-03 17:37:37] [INFO] Opening component selector
+[2026-03-03 17:37:38] [SUCCESS] Selected Component 1 (Level 1)
+[2026-03-03 17:37:41] [INFO] Showing overview for Component 1
+[2026-03-03 17:37:52] [INFO] Shutting down...
+[2026-03-03 17:37:54] [SUCCESS] UDP server closed
+=== Dashboard Log Ended at 2026-03-03 17:37:54 ===

@@ -1,0 +1,48 @@
+=== Dashboard Log Started at 2026-03-03 17:34:29 ===
+[2026-03-03 17:34:29] [SUCCESS] Dashboard started
+[2026-03-03 17:34:33] [INFO] Refreshing device list...
+[2026-03-03 17:34:34] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-03 17:34:34] [SUCCESS] Found 6 device(s), 1 online
+[2026-03-03 17:34:37] [INFO] Starting adhesive manual control on 1 online device(s)
+[2026-03-03 17:34:40] [INFO] Sending motor command to 1 online device(s): 0,200,0
+[2026-03-03 17:34:40] [ERROR] Failed to send to lightsoff-j10: [Errno 111] Connection refused
+[2026-03-03 17:34:43] [ERROR] ADHESIVE EMERGENCY STOP activated
+[2026-03-03 17:34:43] [SUCCESS] Emergency stop sent to lightsoff-j10
+[2026-03-03 17:34:45] [INFO] Starting adhesive listeners on 1 online device(s)...
+[2026-03-03 17:34:49] [SUCCESS] Adhesive listener ready on lightsoff-j10
+[2026-03-03 17:34:52] [INFO] Starting adhesive manual control on 1 online device(s)
+[2026-03-03 17:34:55] [INFO] Sending motor command to 1 online device(s): 0,200,0
+[2026-03-03 17:34:55] [ERROR] Failed to send to lightsoff-j10: [Errno 111] Connection refused
+[2026-03-03 17:34:57] [SUCCESS] Adhesive listener running on lightsoff-j10
+[2026-03-03 17:35:00] [INFO] Starting adhesive manual control on 1 online device(s)
+[2026-03-03 17:35:02] [INFO] Sending motor command to 1 online device(s): 200,0,0
+[2026-03-03 17:35:02] [ERROR] Failed to send to lightsoff-j10: [Errno 111] Connection refused
+[2026-03-03 17:35:04] [INFO] Sending motor command to 1 online device(s): 200,200,0
+[2026-03-03 17:35:04] [ERROR] Failed to send to lightsoff-j10: [Errno 111] Connection refused
+[2026-03-03 17:35:05] [SUCCESS] Adhesive listener ready on lightsoff-j10
+[2026-03-03 17:35:11] [INFO] Sending motor command to 1 online device(s): 200,200,200
+[2026-03-03 17:35:11] [SUCCESS] Command sent to lightsoff-j10: 200,200,200
+[2026-03-03 17:35:12] [INFO] Sending motor command to 1 online device(s): 200,200,200
+[2026-03-03 17:35:12] [SUCCESS] Command sent to lightsoff-j10: 200,200,200
+[2026-03-03 17:35:12] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-03 17:35:12] [SUCCESS] Motors stopped on lightsoff-j10
+[2026-03-03 17:35:13] [SUCCESS] Adhesive listener ready on lightsoff-j10
+[2026-03-03 17:35:17] [INFO] Sending motor command to 1 online device(s): 0,0,50
+[2026-03-03 17:35:17] [SUCCESS] Command sent to lightsoff-j10: 0,0,50
+[2026-03-03 17:35:18] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-03 17:35:18] [SUCCESS] Motors stopped on lightsoff-j10
+[2026-03-03 17:35:20] [INFO] Sending motor command to 1 online device(s): 0,50,0
+[2026-03-03 17:35:20] [SUCCESS] Command sent to lightsoff-j10: 0,50,0
+[2026-03-03 17:35:21] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-03 17:35:21] [SUCCESS] Motors stopped on lightsoff-j10
+[2026-03-03 17:35:23] [INFO] Sending motor command to 1 online device(s): 100,0,0
+[2026-03-03 17:35:23] [SUCCESS] Command sent to lightsoff-j10: 100,0,0
+[2026-03-03 17:35:24] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-03 17:35:24] [SUCCESS] Motors stopped on lightsoff-j10
+[2026-03-03 17:35:26] [INFO] Sending motor command to 1 online device(s): 200,0,0
+[2026-03-03 17:35:26] [SUCCESS] Command sent to lightsoff-j10: 200,0,0
+[2026-03-03 17:35:30] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-03 17:35:30] [SUCCESS] Motors stopped on lightsoff-j10
+[2026-03-03 17:36:53] [INFO] Shutting down...
+[2026-03-03 17:36:55] [SUCCESS] UDP server closed
+=== Dashboard Log Ended at 2026-03-03 17:36:55 ===

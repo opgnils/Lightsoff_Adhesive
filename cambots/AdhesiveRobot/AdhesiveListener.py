@@ -26,37 +26,93 @@ _vesc_thread_stop = False
 def detect_serial_ports():
     """Detect which /dev/ttyACM* is Arduino vs VESC.
 
-    Heuristic based on user's observation:
-    - When only Arduino is connected: typically only /dev/ttyACM1 exists.
-    - When both are connected: /dev/ttyACM0 and /dev/ttyACM1, and ACM0 is likely the VESC.
-
-    We implement:
-    - Prefer to assign
-        VESC  -> /dev/ttyACM0
-        Arduino -> /dev/ttyACM1
-      when both are present.
-    - If only one ACM exists, assume it's the Arduino and leave VESC as None.
+    Strategy:
+    1. Find all /dev/ttyACM* devices
+    2. Try to identify each device by checking its USB attributes or by attempting
+       to communicate at expected baudrates
+    3. VESC typically has higher baudrate (115200) and responds to VESC protocol
+    4. Arduino uses 9600 baud
+    
+    If we can't distinguish them reliably, we'll try both baudrates on each port.
     """
     import glob
+    import os
 
     acm_devices = sorted(glob.glob("/dev/ttyACM*"))
     print(f"[AdhesiveListener] Detected ACM devices: {acm_devices}")
 
+    if len(acm_devices) == 0:
+        print("[AdhesiveListener] Warning: No ACM devices found!")
+        return None, None
+
     arduino_port = None
     vesc_port = None
 
-    if "/dev/ttyACM0" in acm_devices and "/dev/ttyACM1" in acm_devices:
-        vesc_port = "/dev/ttyACM0"
-        arduino_port = "/dev/ttyACM1"
-    elif len(acm_devices) == 1:
-        # Only one device – be conservative and assume it's the Arduino.
-        arduino_port = acm_devices[0]
-        vesc_port = None
-    else:
-        # No ACM or an unexpected layout; leave both as None and log.
-        print("[AdhesiveListener] Warning: could not confidently assign Arduino/VESC ports.")
+    # Try to identify devices by USB vendor/product info
+    for device in acm_devices:
+        try:
+            # Extract device number (e.g., "0" from "/dev/ttyACM0")
+            dev_num = device.replace("/dev/ttyACM", "")
+            
+            # Check USB device info via sysfs
+            # Typical paths: /sys/class/tty/ttyACMx/device/...
+            usb_info_paths = [
+                f"/sys/class/tty/ttyACM{dev_num}/device/interface",
+                f"/sys/class/tty/ttyACM{dev_num}/device/../interface",
+                f"/sys/class/tty/ttyACM{dev_num}/device/product",
+            ]
+            
+            device_info = ""
+            for path in usb_info_paths:
+                if os.path.exists(path):
+                    with open(path, 'r') as f:
+                        device_info = f.read().strip().lower()
+                        break
+            
+            print(f"[AdhesiveListener] {device} USB info: '{device_info}'")
+            
+            # VESC often shows up as "STMicroelectronics Virtual COM Port" or similar
+            # Arduino often shows up as "Arduino" or "USB Serial"
+            if "vesc" in device_info or "stm" in device_info or "vedder" in device_info:
+                vesc_port = device
+                print(f"[AdhesiveListener] Identified {device} as VESC based on USB info")
+            elif "arduino" in device_info or "usb serial" in device_info:
+                arduino_port = device
+                print(f"[AdhesiveListener] Identified {device} as Arduino based on USB info")
+                
+        except Exception as e:
+            print(f"[AdhesiveListener] Could not read USB info for {device}: {e}")
 
-    print(f"[AdhesiveListener] Arduino port: {arduino_port}, VESC port: {vesc_port}")
+    # Fallback heuristic: if we have exactly 2 devices and haven't identified both,
+    # assign them based on position
+    if len(acm_devices) == 2 and (arduino_port is None or vesc_port is None):
+        if arduino_port is None and vesc_port is None:
+            # Try the traditional assignment but with ALL available ACM ports
+            vesc_port = acm_devices[0]
+            arduino_port = acm_devices[1]
+            print(f"[AdhesiveListener] Fallback: Assigned {vesc_port} to VESC, {arduino_port} to Arduino")
+        elif vesc_port is None:
+            # Arduino identified, assign the other to VESC
+            vesc_port = [d for d in acm_devices if d != arduino_port][0]
+            print(f"[AdhesiveListener] Assigned remaining device {vesc_port} to VESC")
+        elif arduino_port is None:
+            # VESC identified, assign the other to Arduino
+            arduino_port = [d for d in acm_devices if d != vesc_port][0]
+            print(f"[AdhesiveListener] Assigned remaining device {arduino_port} to Arduino")
+    
+    # If only one device, be conservative and assume it's the Arduino
+    elif len(acm_devices) == 1 and arduino_port is None and vesc_port is None:
+        arduino_port = acm_devices[0]
+        print(f"[AdhesiveListener] Only one device found, assuming Arduino: {arduino_port}")
+    
+    # If we have more than 2 devices, try to identify or warn
+    elif len(acm_devices) > 2:
+        if arduino_port is None or vesc_port is None:
+            print(f"[AdhesiveListener] WARNING: Found {len(acm_devices)} ACM devices but could not confidently identify all!")
+            print(f"[AdhesiveListener] Arduino: {arduino_port}, VESC: {vesc_port}")
+            print(f"[AdhesiveListener] You may need to manually specify ports or improve detection logic")
+
+    print(f"[AdhesiveListener] Final assignment -> Arduino: {arduino_port}, VESC: {vesc_port}")
     return arduino_port, vesc_port
 
 
@@ -193,7 +249,23 @@ def main():
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.bind((HOST, PORT))
+        try:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        except AttributeError:
+            # SO_REUSEPORT might not be available on all systems
+            pass
+        
+        try:
+            s.bind((HOST, PORT))
+        except OSError as e:
+            if e.errno == 98:  # Address already in use
+                print(f"[AdhesiveListener] ERROR: Port {PORT} is already in use!")
+                print(f"[AdhesiveListener] Kill the existing process with: pkill -9 -f AdhesiveListener")
+                print(f"[AdhesiveListener] Or check what's using the port: lsof -i :{PORT}")
+                sys.exit(1)
+            else:
+                raise
+        
         s.listen(5)
         print(f"[AdhesiveListener] Listening for commands on {HOST}:{PORT}")
 

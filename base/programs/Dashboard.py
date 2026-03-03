@@ -528,6 +528,8 @@ class LightsOffDashboard(App):
     #operation {
         height: 1fr;
         width: 1fr;
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 
     #op-content {
@@ -808,9 +810,11 @@ class LightsOffDashboard(App):
                 "Disengage clamps"
             ]),
             ("adhesive", "5  Adhesive Robot", [
+                "Start listeners",
+                "Check listener logs",
                 "Manual control",
                 "Run profile",
-                "View history",
+                "Kill listeners",
                 "Emergency stop"
             ]),
             ("crane", "6  Crane", [
@@ -964,12 +968,16 @@ class LightsOffDashboard(App):
 
         # ── Adhesive Robot actions ──
         elif section == "adhesive":
-            if action == "Manual control":
+            if action == "Start listeners":
+                await self._do_start_listeners()
+            elif action == "Check listener logs":
+                await self._do_check_listener_logs()
+            elif action == "Manual control":
                 await self._do_adhesive_manual()
             elif action == "Run profile":
                 await self._do_adhesive_profile()
-            elif action == "View history":
-                await self._do_adhesive_history()
+            elif action == "Kill listeners":
+                await self._do_kill_listeners()
             elif action == "Emergency stop":
                 await self._do_adhesive_emergency_stop()
 
@@ -1157,16 +1165,34 @@ class LightsOffDashboard(App):
         def update_task():
             try:
                 config = self.appstate.get("config", "config_lightsoff")
-                run_updates(online_devices, config=config)
-                self._log(f"Code update completed on {len(online_devices)} device(s)", "success")
-                # Update operation view with results
+                update_results = run_updates(online_devices, config=config)
+                
+                # Build a detailed report of what was updated
+                report_lines = []
+                total_files = 0
+                
+                for device_host, files in update_results.items():
+                    if files:
+                        report_lines.append(f"[b]{device_host}:[/b] {len(files)} file(s) updated")
+                        for f in files[:10]:  # Show first 10 files per device
+                            report_lines.append(f"  • {f}")
+                        if len(files) > 10:
+                            report_lines.append(f"  ... and {len(files) - 10} more")
+                        total_files += len(files)
+                    else:
+                        report_lines.append(f"[b]{device_host}:[/b] No changes (already up to date)")
+                
+                report_text = "\n".join(report_lines) if report_lines else "[dim]No files were updated[/dim]"
+                
+                self._log(f"Code update completed on {len(online_devices)} device(s), {total_files} file(s) updated", "success")
+                
+                # Update operation view with detailed results
                 self.call_from_thread(self._set_operation,
                     "Update Code Complete",
                     f"[#50fa7b]✓[/#50fa7b] Successfully updated code on {len(online_devices)} online device(s).\n\n"
-                    "Changes deployed:\n"
-                    "  • Python scripts synced\n"
-                    "  • Cambots directory updated\n"
-                    "  • Ready for operations"
+                    f"[b]Total files updated:[/b] {total_files}\n\n"
+                    f"{report_text}\n\n"
+                    "[dim]Cambots directory synced and ready for operations[/dim]"
                 )
             except Exception as e:
                 self._log(f"Code update failed: {e}", "error")
@@ -1502,6 +1528,155 @@ class LightsOffDashboard(App):
             "  4. Reach target position\n\n"
             "[dim]Crane control integration pending...[/dim]"
         )
+
+    async def _do_start_listeners(self) -> None:
+        """Start adhesive listeners on selected devices."""
+        devices = self.appstate.get("selected_devices", [])
+        
+        if not devices:
+            self._log("No devices selected", "warning")
+            self._set_operation(
+                "Start Listeners",
+                "[#ff5555]No devices selected.[/#ff5555]\n\n"
+                "Please run [b]Discover robots[/b] first."
+            )
+            return
+        
+        # Check which devices are online
+        online_devices = check_online_devices(devices)
+        
+        if not online_devices:
+            self._log("No devices are currently online", "warning")
+            self._set_operation(
+                "Start Listeners",
+                "[#ff5555]No devices are currently online.[/#ff5555]\n\n"
+                f"Selected {len(devices)} device(s), but none are reachable.\n\n"
+                "Please check device connectivity."
+            )
+            return
+        
+        offline_count = len(devices) - len(online_devices)
+        if offline_count > 0:
+            self._log(f"Warning: {offline_count} device(s) are offline and will be skipped", "warning")
+        
+        self._log(f"Starting adhesive listeners on {len(online_devices)} online device(s)...", "info")
+        self._set_operation(
+            "Start Listeners",
+            f"[b]Starting listeners on {len(online_devices)} device(s)...[/b]\n\n"
+            "[dim]Checking for existing listeners and starting new ones if needed.\n\n"
+            "Please wait...[/dim]"
+        )
+        
+        # Start listeners in background thread
+        def start_listeners():
+            results = []
+            for d in online_devices:
+                try:
+                    success = ensure_adhesive_listener_running(d)
+                    if success:
+                        results.append(f"[#50fa7b]✓[/#50fa7b] {d['Host']}: Listener running")
+                        self.call_from_thread(self._log, f"Adhesive listener running on {d['Host']}", "success")
+                    else:
+                        results.append(f"[#ff5555]✗[/#ff5555] {d['Host']}: Failed to start")
+                        self.call_from_thread(self._log, f"Failed to start listener on {d['Host']}", "error")
+                except Exception as e:
+                    results.append(f"[#ff5555]✗[/#ff5555] {d['Host']}: {str(e)}")
+                    self.call_from_thread(self._log, f"Error starting listener on {d['Host']}: {e}", "error")
+            
+            # Show final results
+            results_text = "\n".join(results)
+            self.call_from_thread(self._set_operation,
+                "Start Listeners Complete",
+                f"[b]Listener Status:[/b]\n\n"
+                f"{results_text}\n\n"
+                f"Devices processed: {len(online_devices)}/{len(devices)}\n\n"
+                "[dim]Listeners are now ready for manual control or profile execution.[/dim]"
+            )
+        
+        thread = threading.Thread(target=start_listeners, daemon=True)
+        thread.start()
+
+    async def _do_check_listener_logs(self) -> None:
+        """Check adhesive listener logs on selected devices."""
+        devices = self.appstate.get("selected_devices", [])
+        
+        if not devices:
+            self._log("No devices selected", "warning")
+            self._set_operation(
+                "Check Listener Logs",
+                "[#ff5555]No devices selected.[/#ff5555]\n\n"
+                "Please run [b]Discover robots[/b] first."
+            )
+            return
+        
+        # Check which devices are online
+        online_devices = check_online_devices(devices)
+        
+        if not online_devices:
+            self._log("No devices are currently online", "warning")
+            self._set_operation(
+                "Check Listener Logs",
+                "[#ff5555]No devices are currently online.[/#ff5555]\n\n"
+                f"Selected {len(devices)} device(s), but none are reachable.\n\n"
+                "Please check device connectivity."
+            )
+            return
+        
+        self._log(f"Fetching listener logs from {len(online_devices)} online device(s)...", "info")
+        self._set_operation(
+            "Check Listener Logs",
+            f"[b]Fetching logs from {len(online_devices)} device(s)...[/b]\n\n"
+            "[dim]Retrieving last 30 lines from adhesive_listener.log\n\n"
+            "Please wait...[/dim]"
+        )
+        
+        # Fetch logs in background thread
+        def fetch_logs():
+            all_logs = []
+            for d in online_devices:
+                try:
+                    host = d["HostName"]
+                    user = d["User"]
+                    
+                    # Get last 30 lines of the log file
+                    log_cmd = "tail -30 ~/Documents/LightsOff_Project/adhesive_listener.log 2>&1 || echo 'Log file not found'"
+                    
+                    ssh_cmd = [
+                        "sshpass", "-p", "lightsoff", "ssh",
+                        "-o", "StrictHostKeyChecking=no",
+                        "-o", "ConnectTimeout=5",
+                        f"{user}@{host}",
+                        log_cmd,
+                    ]
+                    
+                    result = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=10)
+                    
+                    if result.returncode == 0:
+                        log_content = result.stdout.strip()
+                        if log_content:
+                            all_logs.append(f"[b]─── {d['Host']} ───[/b]\n{log_content}\n")
+                            self.call_from_thread(self._log, f"Retrieved logs from {d['Host']}", "success")
+                        else:
+                            all_logs.append(f"[b]─── {d['Host']} ───[/b]\n[dim]No log output available[/dim]\n")
+                    else:
+                        all_logs.append(f"[b]─── {d['Host']} ───[/b]\n[#ff5555]Failed to retrieve logs[/#ff5555]\n")
+                        self.call_from_thread(self._log, f"Failed to retrieve logs from {d['Host']}", "error")
+                        
+                except Exception as e:
+                    all_logs.append(f"[b]─── {d['Host']} ───[/b]\n[#ff5555]Error: {str(e)}[/#ff5555]\n")
+                    self.call_from_thread(self._log, f"Error fetching logs from {d['Host']}: {e}", "error")
+            
+            # Show all logs
+            logs_text = "\n".join(all_logs) if all_logs else "[dim]No logs available[/dim]"
+            self.call_from_thread(self._set_operation,
+                "Listener Logs",
+                f"[b]Adhesive Listener Logs (last 30 lines)[/b]\n\n"
+                f"{logs_text}\n"
+                f"[dim]Showing logs from {len(online_devices)} device(s)[/dim]"
+            )
+        
+        thread = threading.Thread(target=fetch_logs, daemon=True)
+        thread.start()
 
     async def _do_adhesive_manual(self) -> None:
         """Manual adhesive control with interactive input fields."""
@@ -2003,6 +2178,75 @@ class LightsOffDashboard(App):
             f"Location: {logs_dir}\n\n"
             "[dim]Log viewer interface will be added to analyze historical data.[/dim]"
         )
+
+    async def _do_kill_listeners(self) -> None:
+        """Kill all Python processes (including listeners) on selected devices."""
+        devices = self.appstate.get("selected_devices", [])
+        
+        if not devices:
+            self._log("No devices selected", "warning")
+            self._set_operation(
+                "Kill Listeners",
+                "[#ff5555]No devices selected.[/#ff5555]\n\n"
+                "Please run [b]Discover robots[/b] first."
+            )
+            return
+        
+        # Check which devices are online
+        online_devices = check_online_devices(devices)
+        
+        if not online_devices:
+            self._log("No devices are currently online", "warning")
+            self._set_operation(
+                "Kill Listeners",
+                "[#ff5555]No devices are currently online.[/#ff5555]\n\n"
+                f"Selected {len(devices)} device(s), but none are reachable.\n\n"
+                "Please check device connectivity."
+            )
+            return
+        
+        offline_count = len(devices) - len(online_devices)
+        if offline_count > 0:
+            self._log(f"Warning: {offline_count} device(s) are offline and will be skipped", "warning")
+        
+        self._log(f"Killing Python processes on {len(online_devices)} online device(s)...", "info")
+        self._set_operation(
+            "Kill Listeners",
+            f"[b]Cleaning up processes on {len(online_devices)} device(s)...[/b]\n\n"
+            "[dim]This will kill all Python processes including:\n"
+            "  • AdhesiveListener.py\n"
+            "  • Any other running Python scripts\n\n"
+            "Please wait...[/dim]"
+        )
+        
+        # Run cleanup in background thread
+        def cleanup_task():
+            try:
+                config = self.appstate.get("config", "config_lightsoff")
+                cleanup_remote_python_processes(online_devices, config=config)
+                self.call_from_thread(self._log, f"Cleanup completed on {len(online_devices)} device(s)", "success")
+                self.call_from_thread(self._set_operation,
+                    "Kill Listeners Complete",
+                    f"[#50fa7b]✓[/#50fa7b] Successfully cleaned up processes on {len(online_devices)} online device(s).\n\n"
+                    "All Python processes have been terminated:\n"
+                    "  • Adhesive listeners stopped\n"
+                    "  • Other Python scripts killed\n\n"
+                    f"Online devices: {len(online_devices)}/{len(devices)}\n\n"
+                    "[dim]You can now restart manual control or run profiles.[/dim]"
+                )
+            except Exception as e:
+                self.call_from_thread(self._log, f"Cleanup failed: {e}", "error")
+                self.call_from_thread(self._set_operation,
+                    "Kill Listeners Failed",
+                    f"[#ff5555]Error during cleanup:[/#ff5555]\n\n{e}\n\n"
+                    "Please check:\n"
+                    "  • Network connectivity\n"
+                    "  • SSH access permissions\n"
+                    "  • Device availability"
+                )
+        
+        thread = threading.Thread(target=cleanup_task, daemon=True)
+        thread.start()
 
     async def _do_adhesive_emergency_stop(self) -> None:
         """Emergency stop for adhesive robot."""
