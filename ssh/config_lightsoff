@@ -13,4 +13,11 @@ Host lightsoff-j03
 Host lightsoff-j10
   HostName 192.168.8.163
   User lightsoff-j10
-  
+
+Host lightsoff-j11
+  HostName 192.168.8.99
+  User lightsoff-j11
+
+Host lightsoff-j12
+  HostName 192.168.8.100
+  User lightsoff-j12
