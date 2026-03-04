@@ -1,0 +1,74 @@
+=== Dashboard Log Started at 2026-03-04 16:25:30 ===
+[2026-03-04 16:25:30] [SUCCESS] Dashboard started
+[2026-03-04 16:25:31] [INFO] Refreshing device list...
+[2026-03-04 16:25:32] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-04 16:25:32] [SUCCESS] Found 6 device(s), 1 online
+[2026-03-04 16:25:39] [INFO] Starting Nanotec velocity test on 1 online device(s)...
+[2026-03-04 16:25:39] [INFO] Running Nanotec test on lightsoff-j10...
+[2026-03-04 16:25:41] [ERROR] Nanotec test failed on lightsoff-j10: Traceback (most recent call last):
+  File "/home/lightsoff-j10/Documents/LightsOff_Project/cambots/Pressure/velocity_test.py", line 191, in <module>
+    velocity_test()
+  File "/home/lightsoff-j10/Documents/LightsOff_Project/cambots/Pressure/velocity_test.py", line 114, in velocity_test
+    raise RuntimeError("No devices found on bus.")
+RuntimeError: No devices found on bus.
+[2026-03-04 16:25:48] [INFO] Starting Nanotec velocity test on 1 online device(s)...
+[2026-03-04 16:25:48] [INFO] Running Nanotec test on lightsoff-j10...
+[2026-03-04 16:25:50] [ERROR] Nanotec test failed on lightsoff-j10: Traceback (most recent call last):
+  File "/home/lightsoff-j10/Documents/LightsOff_Project/cambots/Pressure/velocity_test.py", line 191, in <module>
+    velocity_test()
+  File "/home/lightsoff-j10/Documents/LightsOff_Project/cambots/Pressure/velocity_test.py", line 114, in velocity_test
+    raise RuntimeError("No devices found on bus.")
+RuntimeError: No devices found on bus.
+[2026-03-04 16:25:55] [INFO] Starting code update on 1 online device(s)...
+[2026-03-04 16:25:57] [SUCCESS] Code update completed on 1 device(s), 0 file(s) updated
+[2026-03-04 16:26:01] [INFO] Starting Nanotec velocity test on 1 online device(s)...
+[2026-03-04 16:26:01] [INFO] Running Nanotec test on lightsoff-j10...
+[2026-03-04 16:26:03] [ERROR] Nanotec test failed on lightsoff-j10: Traceback (most recent call last):
+  File "/home/lightsoff-j10/Documents/LightsOff_Project/cambots/Pressure/velocity_test.py", line 191, in <module>
+    velocity_test()
+  File "/home/lightsoff-j10/Documents/LightsOff_Project/cambots/Pressure/velocity_test.py", line 114, in velocity_test
+    raise RuntimeError("No devices found on bus.")
+RuntimeError: No devices found on bus.
+[2026-03-04 16:26:18] [INFO] Starting Nanotec velocity test on 1 online device(s)...
+[2026-03-04 16:26:18] [INFO] Running Nanotec test on lightsoff-j10...
+[2026-03-04 16:26:20] [ERROR] Nanotec test failed on lightsoff-j10: Traceback (most recent call last):
+  File "/home/lightsoff-j10/Documents/LightsOff_Project/cambots/Pressure/velocity_test.py", line 191, in <module>
+    velocity_test()
+  File "/home/lightsoff-j10/Documents/LightsOff_Project/cambots/Pressure/velocity_test.py", line 114, in velocity_test
+    raise RuntimeError("No devices found on bus.")
+RuntimeError: No devices found on bus.
+[2026-03-04 16:26:20] [INFO] Starting Nanotec velocity test on 1 online device(s)...
+[2026-03-04 16:26:20] [INFO] Running Nanotec test on lightsoff-j10...
+[2026-03-04 16:26:22] [ERROR] Nanotec test failed on lightsoff-j10: Traceback (most recent call last):
+  File "/home/lightsoff-j10/Documents/LightsOff_Project/cambots/Pressure/velocity_test.py", line 191, in <module>
+    velocity_test()
+  File "/home/lightsoff-j10/Documents/LightsOff_Project/cambots/Pressure/velocity_test.py", line 114, in velocity_test
+    raise RuntimeError("No devices found on bus.")
+RuntimeError: No devices found on bus.
+[2026-03-04 16:26:22] [INFO] Starting velocity listener on 1 online device(s)...
+[2026-03-04 16:26:22] [INFO] Starting velocity listener on lightsoff-j10...
+[2026-03-04 16:26:26] [ERROR] Failed to start listener on lightsoff-j10
+[2026-03-04 16:26:28] [INFO] Starting velocity listener on 1 online device(s)...
+[2026-03-04 16:26:28] [INFO] Starting velocity listener on lightsoff-j10...
+[2026-03-04 16:26:32] [ERROR] Failed to start listener on lightsoff-j10
+[2026-03-04 16:26:34] [INFO] Starting velocity control on 1 online device(s)
+[2026-03-04 16:26:34] [INFO] Velocity control ready - ensure velocity_control.py listener is running
+[2026-03-04 16:26:39] [INFO] Sending velocity command to 1 online device(s): 200 RPM
+[2026-03-04 16:26:39] [ERROR] Failed to send to lightsoff-j10: [Errno 111] Connection refused
+[2026-03-04 16:26:39] [WARNING] No commands succeeded - velocity control listener may not be running
+[2026-03-04 16:26:40] [WARNING] Sending STOP command to 1 online device(s)
+[2026-03-04 16:26:40] [ERROR] Failed to stop motor on lightsoff-j10: [Errno 111] Connection refused
+[2026-03-04 16:26:42] [INFO] Checking velocity listener status on 1 online device(s)...
+[2026-03-04 16:26:42] [WARNING] Velocity listener NOT running on lightsoff-j10
+[2026-03-04 16:26:59] [INFO] Starting velocity listener on 1 online device(s)...
+[2026-03-04 16:26:59] [INFO] Starting velocity listener on lightsoff-j10...
+[2026-03-04 16:27:04] [ERROR] Failed to start listener on lightsoff-j10
+[2026-03-04 16:27:05] [INFO] Sending velocity command to 1 online device(s): 0 RPM
+[2026-03-04 16:27:05] [ERROR] Failed to send to lightsoff-j10: [Errno 111] Connection refused
+[2026-03-04 16:27:05] [WARNING] No commands succeeded - velocity control listener may not be running
+[2026-03-04 16:27:08] [INFO] Sending velocity command to 1 online device(s): 200 RPM
+[2026-03-04 16:27:08] [ERROR] Failed to send to lightsoff-j10: [Errno 111] Connection refused
+[2026-03-04 16:27:08] [WARNING] No commands succeeded - velocity control listener may not be running
+[2026-03-04 16:27:09] [INFO] Shutting down...
+[2026-03-04 16:27:11] [SUCCESS] UDP server closed
+=== Dashboard Log Ended at 2026-03-04 16:27:12 ===

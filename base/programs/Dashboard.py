@@ -151,6 +151,7 @@ class OperationView(Container):
             ("#op-header", Static),
             ("#op-list", ListView),
             ("#manual-control-form", ManualMotorControl),
+            ("#velocity-control-form", VelocityControl),
             ("#device-selector", DeviceSelector),
         ]
         
@@ -195,6 +196,10 @@ class OperationView(Container):
             pass
         try:
             self.query_one("#manual-control-form", ManualMotorControl).remove()
+        except:
+            pass
+        try:
+            self.query_one("#velocity-control-form", VelocityControl).remove()
         except:
             pass
         try:
@@ -272,6 +277,10 @@ class OperationView(Container):
         except:
             pass
         try:
+            self.query_one("#velocity-control-form", VelocityControl).remove()
+        except:
+            pass
+        try:
             self.query_one("#device-selector", DeviceSelector).remove()
         except:
             pass
@@ -279,6 +288,49 @@ class OperationView(Container):
         # Create and mount the form
         form = ManualMotorControl()
         form._devices = devices  # Store devices for command sending
+        self.mount(form)
+    
+    def show_velocity_form(self, devices: list) -> None:
+        """Display an interactive form for velocity control."""
+        # Check if form already exists and just update it instead of remounting
+        if self._current_mode == "velocity_form":
+            try:
+                existing_form = self.query_one("#velocity-control-form", VelocityControl)
+                existing_form._devices = devices
+                return
+            except:
+                pass
+        
+        self._current_mode = "velocity_form"
+        
+        # Remove other mode content
+        try:
+            self.query_one("#op-content", Static).remove()
+        except:
+            pass
+        try:
+            self.query_one("#op-header", Static).remove()
+        except:
+            pass
+        try:
+            self.query_one("#op-list", ListView).remove()
+        except:
+            pass
+        try:
+            self.query_one("#manual-control-form", ManualMotorControl).remove()
+        except:
+            pass
+        try:
+            self.query_one("#device-selector", DeviceSelector).remove()
+        except:
+            pass
+        try:
+            self.query_one("#velocity-control-form", VelocityControl).remove()
+        except:
+            pass
+        
+        # Create and mount the velocity form
+        form = VelocityControl(devices)
         self.mount(form)
     
     def show_device_selector(self, devices: list, selected_hosts: list = None) -> None:
@@ -310,6 +362,10 @@ class OperationView(Container):
             pass
         try:
             self.query_one("#manual-control-form", ManualMotorControl).remove()
+        except:
+            pass
+        try:
+            self.query_one("#velocity-control-form", VelocityControl).remove()
         except:
             pass
         
@@ -347,6 +403,119 @@ class ManualMotorControl(Container):
             yield Button("Set All to 0", id="zero-btn", variant="error")
 
 
+class VelocityControl(Container):
+    """Interactive form for velocity control of Nanotec motor with single input field."""
+    
+    def __init__(self, devices: list = None) -> None:
+        super().__init__(id="velocity-control-form")
+        self._devices = devices or []
+        self.current_velocity = 0  # Current motor velocity in RPM
+        self.distance_traveled = 0.0  # Accumulated distance in mm
+        self.start_time = None  # Time when velocity was last set
+        self.update_timer = None  # Timer for updating display
+    
+    def compose(self) -> ComposeResult:
+        """Create the form layout with velocity input field and button."""
+        yield Static("[b #ff79c6]Nanotec Motor Velocity Control[/b #ff79c6]\n", id="velocity-header")
+        yield Static(
+            "[#50fa7b]Real-time Velocity Control[/#50fa7b]\n\n"
+            "Control the Nanotec motor velocity in real-time.\n"
+            "[#8be9fd]Negative RPM = ENGAGE (moving down)[/#8be9fd]\n"
+            "[#8be9fd]Positive RPM = DISENGAGE (moving up)[/#8be9fd]\n",
+            id="velocity-desc"
+        )
+        yield Static("  • Velocity (RPM): Enter value and press Enter or click Send", id="velocity-input-desc")
+        yield Input(placeholder="0", id="velocity-input", type="integer")
+        
+        with Horizontal(id="velocity-buttons"):
+            yield Button("Send Velocity", id="send-velocity-btn", variant="primary")
+            yield Button("Stop Motor", id="stop-motor-btn", variant="error")
+            yield Button("Reset Distance", id="reset-distance-btn", variant="default")
+        
+        yield Static("", id="velocity-status")  # Status display for distance/velocity
+    
+    def set_velocity(self, rpm: int) -> None:
+        """Set the current velocity and start tracking distance."""
+        import time
+        
+        # Update accumulated distance before changing velocity
+        if self.start_time is not None and self.current_velocity != 0:
+            elapsed_time = time.time() - self.start_time
+            self._accumulate_distance(elapsed_time)
+        
+        # Update velocity and reset timer
+        self.current_velocity = rpm
+        self.start_time = time.time() if rpm != 0 else None
+        
+        # Start/stop the update timer
+        if rpm != 0:
+            if self.update_timer is None:
+                self.update_timer = self.set_interval(1.0, self._update_display)
+        else:
+            if self.update_timer is not None:
+                self.update_timer.stop()
+                self.update_timer = None
+        
+        self._update_display()
+    
+    def reset_distance(self) -> None:
+        """Reset the accumulated distance to zero."""
+        self.distance_traveled = 0.0
+        self._update_display()
+    
+    def _accumulate_distance(self, elapsed_time: float) -> None:
+        """Add distance traveled in the given time at current velocity."""
+        # Motor specs:
+        # - Gearbox ratio: 80:1
+        # - Lead screw: 4 mm per revolution
+        # Linear speed = (Motor RPM / 80) * 4 mm/rev = Motor RPM * 0.05 mm/rev
+        # Distance = Linear speed * time (in minutes)
+        
+        if self.current_velocity != 0:
+            linear_speed_mm_per_min = self.current_velocity * 0.05  # mm/min
+            distance_mm = linear_speed_mm_per_min * (elapsed_time / 60.0)
+            self.distance_traveled += distance_mm
+    
+    def _update_display(self) -> None:
+        """Update the status display with current velocity and distance."""
+        import time
+        
+        try:
+            status_widget = self.query_one("#velocity-status", Static)
+            
+            # Calculate current distance including time since last update
+            current_distance = self.distance_traveled
+            if self.start_time is not None and self.current_velocity != 0:
+                elapsed_time = time.time() - self.start_time
+                linear_speed_mm_per_min = self.current_velocity * 0.05
+                current_distance += linear_speed_mm_per_min * (elapsed_time / 60.0)
+            
+            # Determine direction
+            if self.current_velocity < 0:
+                direction = "[#ff5555]ENGAGE (↓)[/#ff5555]"
+            elif self.current_velocity > 0:
+                direction = "[#50fa7b]DISENGAGE (↑)[/#50fa7b]"
+            else:
+                direction = "[#6272a4]STOPPED[/#6272a4]"
+            
+            # Format display
+            status_text = (
+                f"\n[b]Current Status:[/b]\n"
+                f"  • Velocity: [#8be9fd]{self.current_velocity} RPM[/#8be9fd] {direction}\n"
+                f"  • Distance traveled: [#f1fa8c]{current_distance:.2f} mm[/#f1fa8c]\n"
+            )
+            
+            status_widget.update(status_text)
+        except Exception:
+            pass  # Widget might not be mounted yet
+    
+    def on_unmount(self) -> None:
+        """Clean up the update timer when widget is unmounted."""
+        if self.update_timer is not None:
+            self.update_timer.stop()
+            self.update_timer = None
+
+
 class DeviceSelector(Container):
     """Multi-select device selector with checkboxes."""
     
@@ -357,7 +526,7 @@ class DeviceSelector(Container):
     
     def compose(self) -> ComposeResult:
         """Create the device selector layout."""
-        yield Static("[b #ff79c6]Select Devices[/b #ff79c6]\n", id="selector-header")
+        yield Static("[b #ff5555]Select Devices[/b #ff5555]\n", id="selector-header")
         yield Static(
             f"[#50fa7b]Available:[/#50fa7b] {len(self._devices)} total, "
             f"{sum(1 for d in self._devices if d.get('online'))} online\n"
@@ -658,6 +827,57 @@ class LightsOffDashboard(App):
         margin-right: 2;
     }
 
+    /* ── Velocity Control Form ─────────────────────── */
+    #velocity-control-form {
+        height: auto;
+        width: 1fr;
+        padding: 1;
+    }
+
+    #velocity-header {
+        height: auto;
+        padding-bottom: 1;
+    }
+
+    #velocity-desc {
+        height: auto;
+        padding-bottom: 1;
+    }
+
+    #velocity-input-desc {
+        height: auto;
+        padding-top: 1;
+        padding-bottom: 0;
+    }
+
+    #velocity-input {
+        width: 30;
+        margin-bottom: 1;
+        border: round #44475a;
+    }
+
+    #velocity-input:focus {
+        border: round #ff79c6;
+    }
+
+    #velocity-buttons {
+        height: auto;
+        width: 1fr;
+        padding-top: 1;
+    }
+
+    #send-velocity-btn {
+        margin-right: 1;
+    }
+
+    #stop-motor-btn {
+        margin-right: 1;
+    }
+
+    #reset-distance-btn {
+        margin-right: 1;
+    }
+
     Button {
         margin: 0 1;
     }
@@ -865,7 +1085,13 @@ class LightsOffDashboard(App):
                 "Run profile",
                 "Emergency stop"
             ]),
-            ("crane", "7  Crane", [
+            ("pressure", "7  Pressure", [
+                "Start velocity listener",
+                "Velocity Control",
+                "Run Nanotec",
+                "Check listener status"
+            ]),
+            ("crane", "8  Crane", [
                 "Position crane",
                 "Home position",
                 "Emergency stop"
@@ -972,6 +1198,12 @@ class LightsOffDashboard(App):
             await self._send_motor_command()
         elif button_id == "zero-btn":
             await self._send_zero_command()
+        elif button_id == "send-velocity-btn":
+            await self._send_velocity_command()
+        elif button_id == "stop-motor-btn":
+            await self._stop_motor_command()
+        elif button_id == "reset-distance-btn":
+            await self._reset_distance_command()
         elif button_id == "confirm-selection-btn":
             await self._confirm_device_selection()
         elif button_id == "deselect-all-btn":
@@ -982,6 +1214,8 @@ class LightsOffDashboard(App):
         # When Enter is pressed on any motor input field, send the command
         if event.input.id in ["motor1-input", "motor2-input", "motor3-input"]:
             await self._send_motor_command()
+        elif event.input.id == "velocity-input":
+            await self._send_velocity_command()
 
     async def _handle_action(self, section: str, action: str) -> None:
         """Route actions to appropriate handlers."""
@@ -1033,6 +1267,17 @@ class LightsOffDashboard(App):
                 await self._do_adhesive_profile()
             elif action == "Emergency stop":
                 await self._do_adhesive_emergency_stop()
+
+        # ── Pressure actions ──
+        elif section == "pressure":
+            if action == "Start velocity listener":
+                await self._do_start_velocity_listener()
+            elif action == "Velocity Control":
+                await self._do_pressure_velocity_control()
+            elif action == "Run Nanotec":
+                await self._do_run_nanotec()
+            elif action == "Check listener status":
+                await self._do_check_velocity_listener()
 
         # ── Crane actions ──
         elif section == "crane":
@@ -2475,6 +2720,583 @@ class LightsOffDashboard(App):
         
         thread = threading.Thread(target=emergency_stop_task, daemon=True)
         thread.start()
+
+    async def _do_run_nanotec(self) -> None:
+        """Run Nanotec motor velocity test on remote cambots machine."""
+        devices = self.appstate.get("selected_devices", [])
+        
+        if not devices:
+            self._log("No devices selected", "warning")
+            self._set_operation(
+                "Run Nanotec",
+                "[#ff5555]No devices selected.[/#ff5555]\n\n"
+                "Please run [b]Discover robots[/b] first."
+            )
+            return
+        
+        # Check which devices are online
+        online_devices = check_online_devices(devices)
+        
+        if not online_devices:
+            self._log("No devices are currently online", "warning")
+            self._set_operation(
+                "Run Nanotec",
+                "[#ff5555]No devices are currently online.[/#ff5555]\n\n"
+                f"Selected {len(devices)} device(s), but none are reachable.\n\n"
+                "Please check device connectivity."
+            )
+            return
+        
+        offline_count = len(devices) - len(online_devices)
+        if offline_count > 0:
+            self._log(f"Warning: {offline_count} device(s) are offline and will be skipped", "warning")
+        
+        self._log(f"Starting Nanotec velocity test on {len(online_devices)} online device(s)...", "info")
+        self._set_operation(
+            "Run Nanotec",
+            f"[b]Starting Nanotec Motor Test[/b]\n\n"
+            f"Running velocity test on {len(online_devices)} online device(s)...\n\n"
+            "[dim]This will:\n"
+            "  • Run the velocity_test.py script on remote machine\n"
+            "  • Test motor movement with positive velocity (300)\n"
+            "  • Test motor movement with negative velocity (-300)\n"
+            "  • Each direction runs for 2 seconds\n"
+            "  • Motor will stop smoothly at the end\n\n"
+            "Please wait...[/dim]"
+        )
+        
+        # Run Nanotec test in background thread
+        def nanotec_task():
+            results = []
+            for d in online_devices:
+                try:
+                    host = d["HostName"]
+                    user = d["User"]
+                    
+                    self.call_from_thread(self._log, f"Running Nanotec test on {d['Host']}...", "info")
+                    
+                    # SSH command to run the velocity test script on remote machine
+                    # Script is located in the cambots/Pressure directory
+                    nanotec_cmd = "cd ~/Documents/LightsOff_Project/cambots/Pressure && python3 velocity_test.py"
+                    
+                    ssh_cmd = [
+                        "sshpass", "-p", "lightsoff", "ssh",
+                        "-o", "StrictHostKeyChecking=no",
+                        "-o", "ConnectTimeout=5",
+                        f"{user}@{host}",
+                        nanotec_cmd,
+                    ]
+                    
+                    result = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=30)
+                    
+                    if result.returncode == 0:
+                        output = result.stdout.strip() if result.stdout else "Test completed"
+                        results.append(f"[#50fa7b]✓[/#50fa7b] {d['Host']}: {output}")
+                        self.call_from_thread(self._log, f"Nanotec test completed on {d['Host']}", "success")
+                    else:
+                        error_msg = result.stderr.strip() if result.stderr else "Unknown error"
+                        results.append(f"[#ff5555]✗[/#ff5555] {d['Host']}: {error_msg}")
+                        self.call_from_thread(self._log, f"Nanotec test failed on {d['Host']}: {error_msg}", "error")
+                        
+                except subprocess.TimeoutExpired:
+                    results.append(f"[#ff5555]✗[/#ff5555] {d['Host']}: Timeout (>30s)")
+                    self.call_from_thread(self._log, f"Nanotec test timeout on {d['Host']}", "error")
+                except Exception as e:
+                    results.append(f"[#ff5555]✗[/#ff5555] {d['Host']}: {str(e)}")
+                    self.call_from_thread(self._log, f"Error running Nanotec test on {d['Host']}: {e}", "error")
+            
+            # Show final results
+            results_text = "\n".join(results)
+            self.call_from_thread(self._set_operation,
+                "Nanotec Test Complete",
+                f"[b]Nanotec Velocity Test Results:[/b]\n\n"
+                f"{results_text}\n\n"
+                f"Devices tested: {len(online_devices)}/{len(devices)}\n\n"
+                "[dim]Test parameters:\n"
+                "  • Positive velocity: 300 RPM for 2s\n"
+                "  • Negative velocity: -300 RPM for 2s\n"
+                "  • Smooth stop at end[/dim]"
+            )
+        
+        thread = threading.Thread(target=nanotec_task, daemon=True)
+        thread.start()
+
+    async def _do_start_velocity_listener(self) -> None:
+        """Start velocity control listener on remote machines."""
+        devices = self.appstate.get("selected_devices", [])
+        
+        if not devices:
+            self._log("No devices selected", "warning")
+            self._set_operation(
+                "Start Velocity Listener",
+                "[#ff5555]No devices selected.[/#ff5555]\n\n"
+                "Please run [b]Discover robots[/b] first."
+            )
+            return
+        
+        # Check which devices are online
+        online_devices = check_online_devices(devices)
+        
+        if not online_devices:
+            self._log("No devices are currently online", "warning")
+            self._set_operation(
+                "Start Velocity Listener",
+                "[#ff5555]No devices are currently online.[/#ff5555]\n\n"
+                f"Selected {len(devices)} device(s), but none are reachable.\n\n"
+                "Please check device connectivity."
+            )
+            return
+        
+        offline_count = len(devices) - len(online_devices)
+        if offline_count > 0:
+            self._log(f"Warning: {offline_count} device(s) are offline and will be skipped", "warning")
+        
+        self._log(f"Starting velocity listener on {len(online_devices)} online device(s)...", "info")
+        self._set_operation(
+            "Start Velocity Listener",
+            f"[b]Starting velocity control listener on {len(online_devices)} device(s)...[/b]\n\n"
+            "[dim]This will:\n"
+            "  • Kill any existing velocity listener\n"
+            "  • Start fresh velocity_control.py instance\n"
+            "  • Listen on port 5002 for velocity commands\n\n"
+            "Please wait...[/dim]"
+        )
+        
+        # Start listeners in background thread
+        def start_listeners():
+            results = []
+            for d in online_devices:
+                try:
+                    host = d["HostName"]
+                    user = d["User"]
+                    
+                    self.call_from_thread(self._log, f"Starting velocity listener on {d['Host']}...", "info")
+                    
+                    # Kill any existing listener on port 5002
+                    kill_cmd = "pkill -9 -f velocity_control.py; sleep 1"
+                    
+                    ssh_cmd = [
+                        "sshpass", "-p", "lightsoff", "ssh",
+                        "-o", "StrictHostKeyChecking=no",
+                        "-o", "ConnectTimeout=5",
+                        f"{user}@{host}",
+                        kill_cmd,
+                    ]
+                    
+                    subprocess.run(ssh_cmd, capture_output=True, timeout=10)
+                    
+                    # Start the velocity listener
+                    start_cmd = "cd ~/Documents/LightsOff_Project/cambots/Pressure && nohup python3 velocity_control.py > velocity_control.log 2>&1 &"
+                    
+                    ssh_cmd = [
+                        "sshpass", "-p", "lightsoff", "ssh",
+                        "-o", "StrictHostKeyChecking=no",
+                        "-o", "ConnectTimeout=5",
+                        f"{user}@{host}",
+                        start_cmd,
+                    ]
+                    
+                    result = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=10)
+                    
+                    # Wait longer for listener to start and motor to initialize
+                    # Motor initialization (DS402 state machine) takes 3-5 seconds
+                    self.call_from_thread(self._log, f"Waiting for motor initialization on {d['Host']}...", "info")
+                    time.sleep(5)
+                    
+                    # Check if it's running by checking the port
+                    check_cmd = "lsof -i:5002 | grep LISTEN || echo 'NOT_RUNNING'"
+                    
+                    ssh_cmd = [
+                        "sshpass", "-p", "lightsoff", "ssh",
+                        "-o", "StrictHostKeyChecking=no",
+                        "-o", "ConnectTimeout=5",
+                        f"{user}@{host}",
+                        check_cmd,
+                    ]
+                    
+                    check_result = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=15)
+                    
+                    if "NOT_RUNNING" not in check_result.stdout:
+                        results.append(f"[#50fa7b]✓[/#50fa7b] {d['Host']}: Velocity listener running on port 5002")
+                        self.call_from_thread(self._log, f"Velocity listener started on {d['Host']}", "success")
+                    else:
+                        results.append(f"[#ff5555]✗[/#ff5555] {d['Host']}: Failed to start listener")
+                        self.call_from_thread(self._log, f"Failed to start listener on {d['Host']}", "error")
+                        
+                except subprocess.TimeoutExpired:
+                    # Timeout during verification check, but listener might still be starting
+                    results.append(f"[#f1fa8c]⚠[/#f1fa8c] {d['Host']}: Listener started but verification timed out")
+                    self.call_from_thread(self._log, 
+                        f"Listener started on {d['Host']} but verification timed out - should still work", "warning")
+                except Exception as e:
+                    results.append(f"[#ff5555]✗[/#ff5555] {d['Host']}: {str(e)}")
+                    self.call_from_thread(self._log, f"Error starting listener on {d['Host']}: {e}", "error")
+            
+            # Show final results
+            results_text = "\n".join(results)
+            self.call_from_thread(self._set_operation,
+                "Velocity Listener Started",
+                f"[b]Velocity Listener Status:[/b]\n\n"
+                f"{results_text}\n\n"
+                f"Devices processed: {len(online_devices)}/{len(devices)}\n\n"
+                "[dim]Listener is ready for velocity control commands.\n"
+                "Use 'Velocity Control' to send velocity commands.[/dim]"
+            )
+        
+        thread = threading.Thread(target=start_listeners, daemon=True)
+        thread.start()
+
+    async def _do_check_velocity_listener(self) -> None:
+        """Check velocity listener status on remote machines."""
+        devices = self.appstate.get("selected_devices", [])
+        
+        if not devices:
+            self._log("No devices selected", "warning")
+            self._set_operation(
+                "Check Velocity Listener",
+                "[#ff5555]No devices selected.[/#ff5555]\n\n"
+                "Please run [b]Discover robots[/b] first."
+            )
+            return
+        
+        # Check which devices are online
+        online_devices = check_online_devices(devices)
+        
+        if not online_devices:
+            self._log("No devices are currently online", "warning")
+            self._set_operation(
+                "Check Velocity Listener",
+                "[#ff5555]No devices are currently online.[/#ff5555]\n\n"
+                f"Selected {len(devices)} device(s), but none are reachable.\n\n"
+                "Please check device connectivity."
+            )
+            return
+        
+        self._log(f"Checking velocity listener status on {len(online_devices)} online device(s)...", "info")
+        self._set_operation(
+            "Check Velocity Listener",
+            f"[b]Checking velocity listener status on {len(online_devices)} device(s)...[/b]\n\n"
+            "[dim]Please wait...[/dim]"
+        )
+        
+        # Check status in background thread
+        def check_status():
+            results = []
+            for d in online_devices:
+                try:
+                    host = d["HostName"]
+                    user = d["User"]
+                    
+                    # Check if listener is running on port 5002
+                    check_cmd = "lsof -i:5002 2>/dev/null || echo 'NOT_RUNNING'"
+                    
+                    ssh_cmd = [
+                        "sshpass", "-p", "lightsoff", "ssh",
+                        "-o", "StrictHostKeyChecking=no",
+                        "-o", "ConnectTimeout=5",
+                        f"{user}@{host}",
+                        check_cmd,
+                    ]
+                    
+                    result = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=10)
+                    
+                    if "NOT_RUNNING" in result.stdout or not result.stdout.strip():
+                        results.append(f"[#ff5555]✗[/#ff5555] {d['Host']}: Listener NOT running on port 5002")
+                        self.call_from_thread(self._log, f"Velocity listener NOT running on {d['Host']}", "warning")
+                    else:
+                        # Extract PID if available
+                        lines = result.stdout.strip().split('\n')
+                        if len(lines) > 1:
+                            results.append(f"[#50fa7b]✓[/#50fa7b] {d['Host']}: Listener RUNNING on port 5002")
+                        else:
+                            results.append(f"[#50fa7b]✓[/#50fa7b] {d['Host']}: Listener RUNNING")
+                        self.call_from_thread(self._log, f"Velocity listener running on {d['Host']}", "success")
+                    
+                    # Also check log file
+                    log_cmd = "tail -5 ~/Documents/LightsOff_Project/cambots/Pressure/velocity_control.log 2>&1 || echo 'No log file'"
+                    
+                    ssh_cmd = [
+                        "sshpass", "-p", "lightsoff", "ssh",
+                        "-o", "StrictHostKeyChecking=no",
+                        "-o", "ConnectTimeout=5",
+                        f"{user}@{host}",
+                        log_cmd,
+                    ]
+                    
+                    log_result = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=10)
+                    
+                    if log_result.stdout.strip() and "No log file" not in log_result.stdout:
+                        results.append(f"  [dim]Last log lines:[/dim]\n  [dim]{log_result.stdout.strip()}[/dim]")
+                        
+                except subprocess.TimeoutExpired:
+                    results.append(f"[#ff5555]✗[/#ff5555] {d['Host']}: Timeout")
+                    self.call_from_thread(self._log, f"Timeout checking listener on {d['Host']}", "error")
+                except Exception as e:
+                    results.append(f"[#ff5555]✗[/#ff5555] {d['Host']}: {str(e)}")
+                    self.call_from_thread(self._log, f"Error checking listener on {d['Host']}: {e}", "error")
+            
+            # Show final results
+            results_text = "\n".join(results)
+            self.call_from_thread(self._set_operation,
+                "Velocity Listener Status",
+                f"[b]Velocity Listener Status:[/b]\n\n"
+                f"{results_text}\n\n"
+                f"Devices checked: {len(online_devices)}/{len(devices)}\n\n"
+                "[dim]If listener is not running, use 'Start velocity listener' to start it.[/dim]"
+            )
+        
+        thread = threading.Thread(target=check_status, daemon=True)
+        thread.start()
+
+    async def _do_pressure_velocity_control(self) -> None:
+        """Interactive velocity control for Nanotec motor."""
+        devices = self.appstate.get("selected_devices", [])
+        
+        if not devices:
+            self._log("No devices selected", "warning")
+            self._set_operation(
+                "Velocity Control",
+                "[#ff5555]No devices selected.[/#ff5555]\n\n"
+                "Please run [b]Discover robots[/b] first."
+            )
+            return
+        
+        # Check which devices are online
+        online_devices = check_online_devices(devices)
+        
+        if not online_devices:
+            self._log("No devices are currently online", "warning")
+            self._set_operation(
+                "Velocity Control",
+                "[#ff5555]No devices are currently online.[/#ff5555]\n\n"
+                f"Selected {len(devices)} device(s), but none are reachable.\n\n"
+                "Please check device connectivity before using velocity control."
+            )
+            return
+        
+        offline_count = len(devices) - len(online_devices)
+        if offline_count > 0:
+            self._log(f"Warning: {offline_count} device(s) are offline and will be skipped", "warning")
+        
+        self._log(f"Starting velocity control on {len(online_devices)} online device(s)", "info")
+        self._log("Velocity control ready - ensure velocity_control.py listener is running", "info")
+        
+        # Show the interactive velocity control form
+        operation_view = self.query_one("#operation", OperationView)
+        operation_view.show_velocity_form(online_devices)
+
+    async def _send_velocity_command(self) -> None:
+        """Send velocity command from the velocity control form input."""
+        try:
+            # Get the input value
+            velocity_input = self.query_one("#velocity-input", Input)
+            
+            # Get value, default to 0 if empty
+            velocity = int(velocity_input.value) if velocity_input.value.strip() else 0
+            
+            # Get devices from the form
+            try:
+                form = self.query_one("#velocity-control-form", VelocityControl)
+                devices = form._devices
+            except:
+                self._log("Could not retrieve device list", "error")
+                return
+            
+            if not devices:
+                self._log("No devices available", "warning")
+                return
+            
+            # Check which devices are online
+            online_devices = check_online_devices(devices)
+            
+            if not online_devices:
+                self._log("No devices are currently online", "warning")
+                return
+            
+            offline_count = len(devices) - len(online_devices)
+            if offline_count > 0:
+                self._log(f"Warning: {offline_count} device(s) are offline and will be skipped", "warning")
+            
+            # Send command to online devices only
+            self._log(f"Sending velocity command to {len(online_devices)} online device(s): {velocity} RPM", "info")
+            
+            def send_commands():
+                success_count = 0
+                for d in online_devices:
+                    # Try up to 2 times with short delay
+                    max_retries = 2
+                    retry_delay = 0.5
+                    
+                    for attempt in range(max_retries):
+                        try:
+                            # Send velocity command to port 5002
+                            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                            sock.settimeout(3.0)
+                            
+                            host = d.get("HostName")
+                            sock.connect((host, 5002))
+                            sock.sendall(f"{velocity}\n".encode('utf-8'))
+                            
+                            # Wait for response
+                            response = sock.recv(1024).decode('utf-8').strip()
+                            sock.close()
+                            
+                            if response.startswith("OK"):
+                                success_count += 1
+                                self.call_from_thread(self._log, 
+                                    f"Velocity set on {d['Host']}: {velocity} RPM", "success")
+                                
+                                # Update the velocity control widget to start tracking distance
+                                try:
+                                    form = self.query_one("#velocity-control-form", VelocityControl)
+                                    self.call_from_thread(form.set_velocity, velocity)
+                                except:
+                                    pass
+                                
+                                break  # Success, exit retry loop
+                            else:
+                                self.call_from_thread(self._log, 
+                                    f"Unexpected response from {d['Host']}: {response}", "warning")
+                                if attempt < max_retries - 1:
+                                    time.sleep(retry_delay)
+                                    
+                        except ConnectionRefusedError:
+                            if attempt < max_retries - 1:
+                                self.call_from_thread(self._log, 
+                                    f"Connection refused on {d['Host']}, retrying...", "warning")
+                                time.sleep(retry_delay)
+                            else:
+                                self.call_from_thread(self._log, 
+                                    f"Failed to connect to {d['Host']}: Listener not running on port 5002", "error")
+                        except socket.timeout:
+                            if attempt < max_retries - 1:
+                                self.call_from_thread(self._log, 
+                                    f"Timeout on {d['Host']}, retrying...", "warning")
+                                time.sleep(retry_delay)
+                            else:
+                                self.call_from_thread(self._log, 
+                                    f"Timeout connecting to {d['Host']}", "error")
+                        except Exception as e:
+                            if attempt < max_retries - 1:
+                                self.call_from_thread(self._log, 
+                                    f"Error on {d['Host']}: {e}, retrying...", "warning")
+                                time.sleep(retry_delay)
+                            else:
+                                self.call_from_thread(self._log, 
+                                    f"Failed to send to {d['Host']}: {e}", "error")
+                            try:
+                                sock.close()
+                            except:
+                                pass
+                
+                if success_count == 0:
+                    self.call_from_thread(self._log, 
+                        "No commands succeeded - check if velocity listener is running (Pressure → Start velocity listener)", "warning")
+            
+            thread = threading.Thread(target=send_commands, daemon=True)
+            thread.start()
+            
+        except ValueError as e:
+            self._log(f"Invalid input: {e}", "error")
+        except Exception as e:
+            self._log(f"Error sending velocity command: {e}", "error")
+
+    async def _stop_motor_command(self) -> None:
+        """Send stop command (velocity = 0) to motor."""
+        try:
+            # Get devices from the form
+            try:
+                form = self.query_one("#velocity-control-form", VelocityControl)
+                devices = form._devices
+            except:
+                self._log("Could not retrieve device list", "error")
+                return
+            
+            if not devices:
+                self._log("No devices available", "warning")
+                return
+            
+            # Check which devices are online
+            online_devices = check_online_devices(devices)
+            
+            if not online_devices:
+                self._log("No devices are currently online", "warning")
+                return
+            
+            offline_count = len(devices) - len(online_devices)
+            if offline_count > 0:
+                self._log(f"Warning: {offline_count} device(s) are offline and will be skipped", "warning")
+            
+            self._log(f"Sending STOP command to {len(online_devices)} online device(s)", "warning")
+            
+            def send_commands():
+                success_count = 0
+                for d in online_devices:
+                    # Try up to 3 times for stop command (critical)
+                    max_retries = 3
+                    retry_delay = 0.3
+                    
+                    for attempt in range(max_retries):
+                        try:
+                            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                            sock.settimeout(3.0)
+                            
+                            host = d.get("HostName")
+                            sock.connect((host, 5002))
+                            sock.sendall(b"0\n")
+                            
+                            response = sock.recv(1024).decode('utf-8').strip()
+                            sock.close()
+                            
+                            if response.startswith("OK"):
+                                success_count += 1
+                                self.call_from_thread(self._log, 
+                                    f"Motor stopped on {d['Host']}", "success")
+                                
+                                # Update the velocity control widget to stop tracking
+                                try:
+                                    form = self.query_one("#velocity-control-form", VelocityControl)
+                                    self.call_from_thread(form.set_velocity, 0)
+                                except:
+                                    pass
+                                
+                                break  # Success, exit retry loop
+                            else:
+                                self.call_from_thread(self._log, 
+                                    f"Unexpected response from {d['Host']}: {response}", "warning")
+                                if attempt < max_retries - 1:
+                                    time.sleep(retry_delay)
+                                    
+                        except Exception as e:
+                            if attempt < max_retries - 1:
+                                self.call_from_thread(self._log, 
+                                    f"Error stopping motor on {d['Host']}: {e}, retrying...", "warning")
+                                time.sleep(retry_delay)
+                            else:
+                                self.call_from_thread(self._log, 
+                                    f"Failed to stop motor on {d['Host']} after {max_retries} attempts: {e}", "error")
+                            try:
+                                sock.close()
+                            except:
+                                pass
+            
+            thread = threading.Thread(target=send_commands, daemon=True)
+            thread.start()
+            
+            # Also clear the input field
+            self.query_one("#velocity-input", Input).value = "0"
+            
+        except Exception as e:
+            self._log(f"Error sending stop command: {e}", "error")
+
+    async def _reset_distance_command(self) -> None:
+        """Reset the accumulated distance counter to zero."""
+        try:
+            form = self.query_one("#velocity-control-form", VelocityControl)
+            form.reset_distance()
+            self._log("Distance counter reset to 0.00 mm", "success")
+        except Exception as e:
+            self._log(f"Error resetting distance: {e}", "error")
 
     async def _do_tracking(self, mode: str) -> None:
         """Start tracking operation."""
