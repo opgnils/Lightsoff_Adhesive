@@ -42,7 +42,8 @@ from base.Devices import (
     launch_remote_file, 
     run_updates,
     cleanup_remote_python_processes,
-    ensure_adhesive_listener_running
+    ensure_adhesive_listener_running,
+    ensure_pressure_listener_running
 )
 
 try:
@@ -281,6 +282,50 @@ class OperationView(Container):
         form._devices = devices  # Store devices for command sending
         self.mount(form)
     
+    def show_pressure_form(self, devices: list = None) -> None:
+        """Display an interactive form for pressure motor control."""
+        # Check if pressure form already exists and just update it
+        if self._current_mode == "pressure_form":
+            try:
+                existing_form = self.query_one("#pressure-control-form", PressureMotorControl)
+                existing_form._devices = devices or []
+                return
+            except:
+                pass
+        
+        self._current_mode = "pressure_form"
+        
+        # Remove other mode content
+        try:
+            self.query_one("#op-content", Static).remove()
+        except:
+            pass
+        try:
+            self.query_one("#op-header", Static).remove()
+        except:
+            pass
+        try:
+            self.query_one("#op-list", ListView).remove()
+        except:
+            pass
+        try:
+            self.query_one("#manual-control-form", ManualMotorControl).remove()
+        except:
+            pass
+        try:
+            self.query_one("#pressure-control-form", PressureMotorControl).remove()
+        except:
+            pass
+        try:
+            self.query_one("#device-selector", DeviceSelector).remove()
+        except:
+            pass
+        
+        # Create and mount the pressure form
+        form = PressureMotorControl()
+        form._devices = devices or []
+        self.mount(form)
+
     def show_device_selector(self, devices: list, selected_hosts: list = None) -> None:
         """Display a multi-select device selector with checkboxes."""
         # Check if selector already exists and just update it
@@ -345,6 +390,44 @@ class ManualMotorControl(Container):
         with Horizontal(id="manual-buttons"):
             yield Button("Send Command", id="send-btn", variant="primary")
             yield Button("Set All to 0", id="zero-btn", variant="error")
+
+
+class PressureMotorControl(Container):
+    """Interactive form for pressure motor velocity control via TCP."""
+    
+    def __init__(self, on_send_callback=None, on_stop_callback=None) -> None:
+        super().__init__(id="pressure-control-form")
+        self.on_send_callback = on_send_callback
+        self.on_stop_callback = on_stop_callback
+        self._devices = []  # Selected devices for TCP communication
+    
+    def compose(self) -> ComposeResult:
+        """Create the form layout with velocity input and controls."""
+        yield Static("[b #ff79c6]Pressure Motor Control (TCP)[/b #ff79c6]\n", id="pressure-header")
+        yield Static("[#50fa7b]Nanotec Motor - Velocity Mode (Port 5002)[/#50fa7b]", id="pressure-desc")
+        yield Static("  • Commands sent via TCP to selected devices", id="pressure-tcp-desc")
+        yield Static("  • Velocity: motor units (typical range: ±500)", id="pressure-vel-desc")
+        yield Input(placeholder="0", id="pressure-velocity-input", type="integer")
+        
+        with Horizontal(id="pressure-buttons"):
+            yield Button("Connect Motor", id="pressure-connect-btn", variant="success")
+            yield Button("Set Velocity", id="pressure-set-vel-btn", variant="primary")
+            yield Button("Stop Motor", id="pressure-stop-btn", variant="error")
+            yield Button("Disconnect", id="pressure-disconnect-btn", variant="warning")
+        
+        yield Static("", id="pressure-status")
+        yield Static("[dim]Status: Disconnected[/dim]", id="pressure-motor-status")
+    
+    def update_status(self, message: str, is_error: bool = False) -> None:
+        """Update the motor status display."""
+        try:
+            status_widget = self.query_one("#pressure-motor-status", Static)
+            if is_error:
+                status_widget.update(f"[#ff5555]Status: {message}[/#ff5555]")
+            else:
+                status_widget.update(f"[#50fa7b]Status: {message}[/#50fa7b]")
+        except:
+            pass
 
 
 class DeviceSelector(Container):
@@ -802,7 +885,8 @@ class LightsOffDashboard(App):
             "  • Configure components for tracking\n"
             "  • Run combined tracking operations\n"
             "  • Control assembly robots (engage/disengage clamps)\n"
-            "  • Control adhesive robots\n"
+            "  • Control adhesive dispensing\n"
+            "  • Monitor and calibrate pressure sensors\n"
             "  • Position and control crane\n\n"
             "[dim]Press [b]R[/b] to refresh devices | Press [b]Q[/b] to quit[/dim]"
         )
@@ -849,19 +933,26 @@ class LightsOffDashboard(App):
             ("tracking", "3  Tracking", [
                 "Combined tracking"
             ]),
-            ("assembly", "4  Assembly Robot", [
+            ("assembly", "4  Assembly", [
                 "Engage clamps",
                 "Disengage clamps"
             ]),
-            ("adhesive", "5  Adhesive Robot", [
+            ("listeners", "5  Listeners", [
                 "Start listeners",
                 "Check listener logs",
+                "Kill listeners"
+            ]),
+            ("adhesive", "6  Adhesive", [
                 "Manual control",
                 "Run profile",
-                "Kill listeners",
                 "Emergency stop"
             ]),
-            ("crane", "6  Crane", [
+            ("pressure", "7  Pressure", [
+                "Manual control",
+                "Monitor pressure",
+                "Calibrate sensors"
+            ]),
+            ("crane", "8  Crane", [
                 "Position crane",
                 "Home position",
                 "Emergency stop"
@@ -972,6 +1063,14 @@ class LightsOffDashboard(App):
             await self._confirm_device_selection()
         elif button_id == "deselect-all-btn":
             await self._deselect_all_devices()
+        elif button_id == "pressure-connect-btn":
+            await self._pressure_connect()
+        elif button_id == "pressure-set-vel-btn":
+            await self._pressure_set_velocity()
+        elif button_id == "pressure-stop-btn":
+            await self._pressure_stop()
+        elif button_id == "pressure-disconnect-btn":
+            await self._pressure_disconnect()
     
     async def on_input_submitted(self, event: Input.Submitted) -> None:
         """Handle Enter key press on input fields."""
@@ -1010,20 +1109,32 @@ class LightsOffDashboard(App):
             elif action == "Disengage clamps":
                 await self._do_motor_action(engage=False)
 
-        # ── Adhesive Robot actions ──
-        elif section == "adhesive":
+        # ── Unified Listener actions ──
+        elif section == "listeners":
             if action == "Start listeners":
                 await self._do_start_listeners()
             elif action == "Check listener logs":
                 await self._do_check_listener_logs()
-            elif action == "Manual control":
+            elif action == "Kill listeners":
+                await self._do_kill_listeners()
+
+        # ── Adhesive Robot actions ──
+        elif section == "adhesive":
+            if action == "Manual control":
                 await self._do_adhesive_manual()
             elif action == "Run profile":
                 await self._do_adhesive_profile()
-            elif action == "Kill listeners":
-                await self._do_kill_listeners()
             elif action == "Emergency stop":
                 await self._do_adhesive_emergency_stop()
+
+        # ── Pressure actions ──
+        elif section == "pressure":
+            if action == "Manual control":
+                await self._do_pressure_manual()
+            elif action == "Monitor pressure":
+                await self._do_monitor_pressure()
+            elif action == "Calibrate sensors":
+                await self._do_calibrate_pressure()
 
         # ── Crane actions ──
         elif section == "crane":
@@ -1574,7 +1685,7 @@ class LightsOffDashboard(App):
         )
 
     async def _do_start_listeners(self) -> None:
-        """Start adhesive listeners on selected devices."""
+        """Start unified listeners on selected devices (handles both adhesive and pressure motors)."""
         devices = self.appstate.get("selected_devices", [])
         
         if not devices:
@@ -1603,11 +1714,14 @@ class LightsOffDashboard(App):
         if offline_count > 0:
             self._log(f"Warning: {offline_count} device(s) are offline and will be skipped", "warning")
         
-        self._log(f"Starting adhesive listeners on {len(online_devices)} online device(s)...", "info")
+        self._log(f"Starting unified listeners on {len(online_devices)} online device(s)...", "info")
         self._set_operation(
             "Start Listeners",
-            f"[b]Starting listeners on {len(online_devices)} device(s)...[/b]\n\n"
-            "[dim]Checking for existing listeners and starting new ones if needed.\n\n"
+            f"[b]Starting UnifiedListener on {len(online_devices)} device(s)...[/b]\n\n"
+            "[dim]The UnifiedListener handles:\n"
+            "  • Adhesive motors (port 5001)\n"
+            "  • Pressure motor (port 5002)\n\n"
+            "Checking for existing listeners and starting new ones if needed.\n\n"
             "Please wait...[/dim]"
         )
         
@@ -1618,8 +1732,8 @@ class LightsOffDashboard(App):
                 try:
                     success = ensure_adhesive_listener_running(d)
                     if success:
-                        results.append(f"[#50fa7b]✓[/#50fa7b] {d['Host']}: Listener running")
-                        self.call_from_thread(self._log, f"Adhesive listener running on {d['Host']}", "success")
+                        results.append(f"[#50fa7b]✓[/#50fa7b] {d['Host']}: UnifiedListener running")
+                        self.call_from_thread(self._log, f"UnifiedListener running on {d['Host']}", "success")
                     else:
                         results.append(f"[#ff5555]✗[/#ff5555] {d['Host']}: Failed to start")
                         self.call_from_thread(self._log, f"Failed to start listener on {d['Host']}", "error")
@@ -1634,14 +1748,16 @@ class LightsOffDashboard(App):
                 f"[b]Listener Status:[/b]\n\n"
                 f"{results_text}\n\n"
                 f"Devices processed: {len(online_devices)}/{len(devices)}\n\n"
-                "[dim]Listeners are now ready for manual control or profile execution.[/dim]"
+                "[dim]Unified listeners are now ready for:\n"
+                "  • Adhesive manual control and profiles\n"
+                "  • Pressure motor control[/dim]"
             )
         
         thread = threading.Thread(target=start_listeners, daemon=True)
         thread.start()
 
     async def _do_check_listener_logs(self) -> None:
-        """Check adhesive listener logs on selected devices."""
+        """Check unified listener logs on selected devices."""
         devices = self.appstate.get("selected_devices", [])
         
         if not devices:
@@ -1670,7 +1786,7 @@ class LightsOffDashboard(App):
         self._set_operation(
             "Check Listener Logs",
             f"[b]Fetching logs from {len(online_devices)} device(s)...[/b]\n\n"
-            "[dim]Retrieving last 30 lines from adhesive_listener.log\n\n"
+            "[dim]Retrieving last 30 lines from unified_listener.log\n\n"
             "Please wait...[/dim]"
         )
         
@@ -1683,7 +1799,7 @@ class LightsOffDashboard(App):
                     user = d["User"]
                     
                     # Get last 30 lines of the log file
-                    log_cmd = "tail -30 ~/Documents/LightsOff_Project/adhesive_listener.log 2>&1 || echo 'Log file not found'"
+                    log_cmd = "tail -30 ~/Documents/LightsOff_Project/unified_listener.log 2>&1 || echo 'Log file not found'"
                     
                     ssh_cmd = [
                         "sshpass", "-p", "lightsoff", "ssh",
@@ -1713,10 +1829,11 @@ class LightsOffDashboard(App):
             # Show all logs
             logs_text = "\n".join(all_logs) if all_logs else "[dim]No logs available[/dim]"
             self.call_from_thread(self._set_operation,
-                "Listener Logs",
-                f"[b]Adhesive Listener Logs (last 30 lines)[/b]\n\n"
+                "Unified Listener Logs",
+                f"[b]Unified Listener Logs (last 30 lines)[/b]\n\n"
                 f"{logs_text}\n"
-                f"[dim]Showing logs from {len(online_devices)} device(s)[/dim]"
+                f"[dim]Showing logs from {len(online_devices)} device(s)\n"
+                "Unified listener handles both adhesive (port 5001) and pressure (port 5002) motors.[/dim]"
             )
         
         thread = threading.Thread(target=fetch_logs, daemon=True)
@@ -1757,24 +1874,38 @@ class LightsOffDashboard(App):
         # Clear emergency stop flag when entering manual control
         self._emergency_stop_flag = False
         
-        # Show initial message about listener startup
-        self._log(f"Ensuring adhesive listeners are running on {len(online_devices)} device(s)...", "info")
+        # Check if UnifiedListener is already running (don't restart it!)
+        self._log(f"Checking UnifiedListener status on {len(online_devices)} device(s)...", "info")
         
-        # Ensure listeners are running in background on online devices only
-        def ensure_listeners():
+        # Verify listeners in background on online devices only
+        def verify_listeners():
             ready_count = 0
             for d in online_devices:
                 try:
-                    self.call_from_thread(self._log, f"Starting listener on {d['Host']}...", "info")
-                    success = ensure_adhesive_listener_running(d)
+                    host = d["HostName"]
+                    user = d["User"]
                     
-                    if success:
+                    # Check if port 5001 (adhesive) is listening - do NOT kill/restart
+                    check_cmd = "lsof -i :5001 -sTCP:LISTEN 2>/dev/null | grep -q python && echo 'LISTENING' || echo 'NOT_LISTENING'"
+                    ssh_cmd = [
+                        "sshpass", "-p", "lightsoff", "ssh",
+                        "-o", "StrictHostKeyChecking=no",
+                        "-o", "ConnectTimeout=5",
+                        f"{user}@{host}",
+                        check_cmd
+                    ]
+                    
+                    result = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=10)
+                    
+                    if result.returncode == 0 and "LISTENING" in result.stdout:
                         ready_count += 1
                         self.call_from_thread(self._log, f"✓ Listener ready on {d['Host']}", "success")
                     else:
-                        self.call_from_thread(self._log, f"⚠ Listener verification inconclusive on {d['Host']}", "warning")
+                        self.call_from_thread(self._log, 
+                            f"⚠ Listener NOT running on {d['Host']} - please start it from Listeners menu first", 
+                            "warning")
                 except Exception as e:
-                    self.call_from_thread(self._log, f"✗ Failed to start listener on {d['Host']}: {e}", "error")
+                    self.call_from_thread(self._log, f"✗ Failed to check listener on {d['Host']}: {e}", "error")
             
             # Summary message
             if ready_count == len(online_devices):
@@ -1782,9 +1913,11 @@ class LightsOffDashboard(App):
             elif ready_count > 0:
                 self.call_from_thread(self._log, f"{ready_count}/{len(online_devices)} listener(s) ready - some devices may not respond", "warning")
             else:
-                self.call_from_thread(self._log, f"No listeners ready - commands will likely fail", "error")
+                self.call_from_thread(self._log, 
+                    f"⚠ No listeners ready - please start listeners from menu first!", 
+                    "error")
         
-        thread = threading.Thread(target=ensure_listeners, daemon=True)
+        thread = threading.Thread(target=verify_listeners, daemon=True)
         thread.start()
         
         # Show the interactive manual control form (pass online_devices)
@@ -1928,6 +2061,308 @@ class LightsOffDashboard(App):
             
         except Exception as e:
             self._log(f"Error sending zero command: {e}", "error")
+
+    # ── Pressure motor control helpers ──────────────────────────────────────
+
+    async def _pressure_connect(self) -> None:
+        """Connect to the pressure motor via TCP."""
+        try:
+            form = self.query_one("#pressure-control-form", PressureMotorControl)
+            
+            # Get selected devices
+            devices = self.appstate.get("selected_devices", [])
+            if not devices:
+                self._log("No devices selected. Use 'Select robots' first.", "warning")
+                form.update_status("No devices selected", is_error=True)
+                return
+            
+            # Check which devices are online
+            online_devices = check_online_devices(devices)
+            if not online_devices:
+                self._log("No devices are currently online", "warning")
+                form.update_status("No devices online", is_error=True)
+                return
+            
+            self._log(f"Connecting to pressure motor on {len(online_devices)} device(s)...", "info")
+            form.update_status("Connecting...", is_error=False)
+            
+            # Send CONNECT command via TCP in background thread
+            def connect_thread():
+                success_count = 0
+                errors = []
+                
+                for device in online_devices:
+                    try:
+                        host = device.get("HostName", "localhost")
+                        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                            sock.settimeout(5.0)
+                            sock.connect((host, 5002))  # Pressure listener port
+                            sock.sendall(b"CONNECT\n")
+                            
+                            # Wait for response
+                            response = sock.recv(1024).decode("utf-8").strip()
+                            
+                            if response.startswith("OK:"):
+                                success_count += 1
+                                self.call_from_thread(self._log, 
+                                    f"Motor connected on {device['Host']}", "success")
+                            else:
+                                error_msg = response.replace("ERROR:", "")
+                                errors.append(f"{device['Host']}: {error_msg}")
+                                self.call_from_thread(self._log, 
+                                    f"Connection failed on {device['Host']}: {error_msg}", "error")
+                    
+                    except (socket.timeout, ConnectionRefusedError, OSError) as e:
+                        errors.append(f"{device['Host']}: {str(e)}")
+                        self.call_from_thread(self._log, 
+                            f"Connection failed on {device['Host']}: {e}", "error")
+                
+                # Update status
+                if success_count > 0:
+                    self.call_from_thread(form.update_status, 
+                        f"Connected ({success_count}/{len(online_devices)})", False)
+                else:
+                    error_summary = errors[0] if errors else "Unknown error"
+                    self.call_from_thread(form.update_status, 
+                        f"Failed: {error_summary}", True)
+            
+            thread = threading.Thread(target=connect_thread, daemon=True)
+            thread.start()
+            
+        except Exception as e:
+            self._log(f"Error connecting to motor: {e}", "error")
+            try:
+                form = self.query_one("#pressure-control-form", PressureMotorControl)
+                form.update_status(f"Error: {e}", is_error=True)
+            except:
+                pass
+
+    async def _pressure_set_velocity(self) -> None:
+        """Set velocity for the pressure motor via TCP."""
+        try:
+            form = self.query_one("#pressure-control-form", PressureMotorControl)
+            
+            # Get selected devices
+            devices = self.appstate.get("selected_devices", [])
+            if not devices:
+                self._log("No devices selected", "warning")
+                form.update_status("No devices selected", is_error=True)
+                return
+            
+            # Get velocity input
+            velocity_input = self.query_one("#pressure-velocity-input", Input)
+            
+            if not velocity_input.value.strip():
+                self._log("Please enter a velocity value", "warning")
+                return
+            
+            try:
+                velocity = int(velocity_input.value)
+            except ValueError:
+                self._log("Invalid velocity value. Please enter an integer.", "error")
+                return
+            
+            # Typical range check (adjust based on your motor specs)
+            if abs(velocity) > 5000:
+                self._log(f"Velocity {velocity} exceeds typical max ±5000 units", "warning")
+            
+            # Check which devices are online
+            online_devices = check_online_devices(devices)
+            if not online_devices:
+                self._log("No devices are currently online", "warning")
+                form.update_status("No devices online", is_error=True)
+                return
+            
+            self._log(f"Setting velocity to {velocity} on {len(online_devices)} device(s)", "info")
+            form.update_status(f"Setting velocity: {velocity}", is_error=False)
+            
+            # Send VELOCITY command via TCP in background thread
+            def set_vel_thread():
+                success_count = 0
+                
+                for device in online_devices:
+                    try:
+                        host = device.get("HostName", "localhost")
+                        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                            sock.settimeout(3.0)
+                            sock.connect((host, 5002))
+                            sock.sendall(f"VELOCITY:{velocity}\n".encode("utf-8"))
+                            
+                            # Wait for response
+                            response = sock.recv(1024).decode("utf-8").strip()
+                            
+                            if response.startswith("OK:"):
+                                success_count += 1
+                                self.call_from_thread(self._log, 
+                                    f"Velocity set to {velocity} on {device['Host']}", "success")
+                            else:
+                                error_msg = response.replace("ERROR:", "")
+                                self.call_from_thread(self._log, 
+                                    f"Failed on {device['Host']}: {error_msg}", "error")
+                    
+                    except Exception as e:
+                        self.call_from_thread(self._log, 
+                            f"Failed on {device['Host']}: {e}", "error")
+                
+                # Update status
+                if success_count > 0:
+                    self.call_from_thread(form.update_status, 
+                        f"Running @ {velocity} ({success_count}/{len(online_devices)})", False)
+                else:
+                    self.call_from_thread(form.update_status, 
+                        "Set velocity failed", True)
+            
+            thread = threading.Thread(target=set_vel_thread, daemon=True)
+            thread.start()
+            
+        except Exception as e:
+            self._log(f"Error setting velocity: {e}", "error")
+            try:
+                form = self.query_one("#pressure-control-form", PressureMotorControl)
+                form.update_status(f"Error: {e}", is_error=True)
+            except:
+                pass
+
+    async def _pressure_stop(self) -> None:
+        """Stop the pressure motor via TCP."""
+        try:
+            form = self.query_one("#pressure-control-form", PressureMotorControl)
+            
+            # Get selected devices
+            devices = self.appstate.get("selected_devices", [])
+            if not devices:
+                self._log("No devices selected", "warning")
+                form.update_status("No devices selected", is_error=True)
+                return
+            
+            # Check which devices are online
+            online_devices = check_online_devices(devices)
+            if not online_devices:
+                self._log("No devices are currently online", "warning")
+                form.update_status("No devices online", is_error=True)
+                return
+            
+            self._log(f"Stopping pressure motor on {len(online_devices)} device(s)", "info")
+            form.update_status("Stopping...", is_error=False)
+            
+            # Send STOP command via TCP in background thread
+            def stop_thread():
+                success_count = 0
+                
+                for device in online_devices:
+                    try:
+                        host = device.get("HostName", "localhost")
+                        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                            sock.settimeout(3.0)
+                            sock.connect((host, 5002))
+                            sock.sendall(b"STOP\n")
+                            
+                            # Wait for response
+                            response = sock.recv(1024).decode("utf-8").strip()
+                            
+                            if response.startswith("OK:"):
+                                success_count += 1
+                                self.call_from_thread(self._log, 
+                                    f"Motor stopped on {device['Host']}", "success")
+                            else:
+                                error_msg = response.replace("ERROR:", "")
+                                self.call_from_thread(self._log, 
+                                    f"Stop failed on {device['Host']}: {error_msg}", "error")
+                    
+                    except Exception as e:
+                        self.call_from_thread(self._log, 
+                            f"Stop failed on {device['Host']}: {e}", "error")
+                
+                # Update status and clear velocity input
+                if success_count > 0:
+                    self.call_from_thread(form.update_status, 
+                        f"Stopped ({success_count}/{len(online_devices)})", False)
+                    # Clear velocity input
+                    velocity_input = self.query_one("#pressure-velocity-input", Input)
+                    velocity_input.value = "0"
+                else:
+                    self.call_from_thread(form.update_status, 
+                        "Stop failed", True)
+            
+            thread = threading.Thread(target=stop_thread, daemon=True)
+            thread.start()
+            
+        except Exception as e:
+            self._log(f"Error stopping motor: {e}", "error")
+            try:
+                form = self.query_one("#pressure-control-form", PressureMotorControl)
+                form.update_status(f"Error: {e}", is_error=True)
+            except:
+                pass
+
+    async def _pressure_disconnect(self) -> None:
+        """Disconnect from the pressure motor via TCP."""
+        try:
+            form = self.query_one("#pressure-control-form", PressureMotorControl)
+            
+            # Get selected devices
+            devices = self.appstate.get("selected_devices", [])
+            if not devices:
+                self._log("No devices selected", "warning")
+                form.update_status("No devices selected", is_error=True)
+                return
+            
+            # Check which devices are online
+            online_devices = check_online_devices(devices)
+            if not online_devices:
+                self._log("No devices are currently online", "warning")
+                form.update_status("No devices online", is_error=True)
+                return
+            
+            self._log(f"Disconnecting from pressure motor on {len(online_devices)} device(s)", "info")
+            form.update_status("Disconnecting...", is_error=False)
+            
+            # Send DISCONNECT command via TCP in background thread
+            def disconnect_thread():
+                success_count = 0
+                
+                for device in online_devices:
+                    try:
+                        host = device.get("HostName", "localhost")
+                        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                            sock.settimeout(3.0)
+                            sock.connect((host, 5002))
+                            sock.sendall(b"DISCONNECT\n")
+                            
+                            # Wait for response
+                            response = sock.recv(1024).decode("utf-8").strip()
+                            
+                            if response.startswith("OK:"):
+                                success_count += 1
+                                self.call_from_thread(self._log, 
+                                    f"Motor disconnected on {device['Host']}", "success")
+                            else:
+                                error_msg = response.replace("ERROR:", "")
+                                self.call_from_thread(self._log, 
+                                    f"Disconnect failed on {device['Host']}: {error_msg}", "error")
+                    
+                    except Exception as e:
+                        self.call_from_thread(self._log, 
+                            f"Disconnect failed on {device['Host']}: {e}", "error")
+                
+                # Update status
+                if success_count > 0:
+                    self.call_from_thread(form.update_status, 
+                        f"Disconnected ({success_count}/{len(online_devices)})", False)
+                else:
+                    self.call_from_thread(form.update_status, 
+                        "Disconnect failed", True)
+            
+            thread = threading.Thread(target=disconnect_thread, daemon=True)
+            thread.start()
+            
+        except Exception as e:
+            self._log(f"Error disconnecting: {e}", "error")
+            try:
+                form = self.query_one("#pressure-control-form", PressureMotorControl)
+                form.update_status(f"Error: {e}", is_error=True)
+            except:
+                pass
 
     async def _confirm_device_selection(self) -> None:
         """Confirm device selection from checkboxes and update appstate."""
@@ -2299,7 +2734,7 @@ class LightsOffDashboard(App):
             "Kill Listeners",
             f"[b]Cleaning up processes on {len(online_devices)} device(s)...[/b]\n\n"
             "[dim]This will kill all Python processes including:\n"
-            "  • AdhesiveListener.py\n"
+            "  • UnifiedListener.py (adhesive + pressure motors)\n"
             "  • Any other running Python scripts\n\n"
             "Please wait...[/dim]"
         )
@@ -2314,10 +2749,10 @@ class LightsOffDashboard(App):
                     "Kill Listeners Complete",
                     f"[#50fa7b]✓[/#50fa7b] Successfully cleaned up processes on {len(online_devices)} online device(s).\n\n"
                     "All Python processes have been terminated:\n"
-                    "  • Adhesive listeners stopped\n"
+                    "  • UnifiedListener stopped (adhesive + pressure motors)\n"
                     "  • Other Python scripts killed\n\n"
                     f"Online devices: {len(online_devices)}/{len(devices)}\n\n"
-                    "[dim]You can now restart manual control or run profiles.[/dim]"
+                    "[dim]You can now restart the listeners or run profiles.[/dim]"
                 )
             except Exception as e:
                 self.call_from_thread(self._log, f"Cleanup failed: {e}", "error")
@@ -2423,6 +2858,251 @@ class LightsOffDashboard(App):
         
         thread = threading.Thread(target=emergency_stop_task, daemon=True)
         thread.start()
+
+    # ── Pressure Listener Management ─────────────────────────────────────────
+
+    async def _do_start_pressure_listeners(self) -> None:
+        """Start pressure listeners on selected devices."""
+        devices = self.appstate.get("selected_devices", [])
+        
+        if not devices:
+            self._log("No devices selected", "warning")
+            self._set_operation(
+                "Start Pressure Listeners",
+                "[#ff5555]No devices selected.[/#ff5555]\n\n"
+                "Please run [b]Discover robots[/b] first."
+            )
+            return
+        
+        # Check which devices are online
+        online_devices = check_online_devices(devices)
+        
+        if not online_devices:
+            self._log("No devices are currently online", "warning")
+            self._set_operation(
+                "Start Pressure Listeners",
+                "[#ff5555]No devices are currently online.[/#ff5555]\n\n"
+                f"Selected {len(devices)} device(s), but none are reachable.\n\n"
+                "Please check device connectivity."
+            )
+            return
+        
+        offline_count = len(devices) - len(online_devices)
+        if offline_count > 0:
+            self._log(f"Warning: {offline_count} device(s) are offline and will be skipped", "warning")
+        
+        self._log(f"Starting pressure listeners on {len(online_devices)} online device(s)...", "info")
+        self._set_operation(
+            "Start Pressure Listeners",
+            f"[b]Starting listeners on {len(online_devices)} device(s)...[/b]\n\n"
+            "[dim]Checking for existing listeners and starting new ones if needed.\n\n"
+            "Please wait...[/dim]"
+        )
+        
+        # Start listeners in background thread
+        def start_listeners():
+            results = []
+            for d in online_devices:
+                try:
+                    success = ensure_pressure_listener_running(d)
+                    if success:
+                        results.append(f"[#50fa7b]✓[/#50fa7b] {d['Host']}: Listener running")
+                        self.call_from_thread(self._log, f"Pressure listener running on {d['Host']}", "success")
+                    else:
+                        results.append(f"[#ff5555]✗[/#ff5555] {d['Host']}: Failed to start")
+                        self.call_from_thread(self._log, f"Failed to start listener on {d['Host']}", "error")
+                except Exception as e:
+                    results.append(f"[#ff5555]✗[/#ff5555] {d['Host']}: {str(e)}")
+                    self.call_from_thread(self._log, f"Error starting listener on {d['Host']}: {e}", "error")
+            
+            # Show final results
+            results_text = "\n".join(results)
+            self.call_from_thread(self._set_operation,
+                "Start Pressure Listeners Complete",
+                f"[b]Listener Status:[/b]\n\n"
+                f"{results_text}\n\n"
+                f"Devices processed: {len(online_devices)}/{len(devices)}\n\n"
+                "[dim]Listeners are now ready for pressure motor control on port 5002.[/dim]"
+            )
+        
+        thread = threading.Thread(target=start_listeners, daemon=True)
+        thread.start()
+
+    async def _do_check_pressure_listener_logs(self) -> None:
+        """Check pressure listener logs on selected devices."""
+        devices = self.appstate.get("selected_devices", [])
+        
+        if not devices:
+            self._log("No devices selected", "warning")
+            self._set_operation(
+                "Check Pressure Listener Logs",
+                "[#ff5555]No devices selected.[/#ff5555]\n\n"
+                "Please run [b]Discover robots[/b] first."
+            )
+            return
+        
+        # Check which devices are online
+        online_devices = check_online_devices(devices)
+        
+        if not online_devices:
+            self._log("No devices are currently online", "warning")
+            self._set_operation(
+                "Check Pressure Listener Logs",
+                "[#ff5555]No devices are currently online.[/#ff5555]\n\n"
+                f"Selected {len(devices)} device(s), but none are reachable.\n\n"
+                "Please check device connectivity."
+            )
+            return
+        
+        self._log(f"Fetching pressure listener logs from {len(online_devices)} online device(s)...", "info")
+        self._set_operation(
+            "Check Pressure Listener Logs",
+            f"[b]Fetching logs from {len(online_devices)} device(s)...[/b]\n\n"
+            "[dim]Retrieving last 30 lines from pressure_listener.log\n\n"
+            "Please wait...[/dim]"
+        )
+        
+        # Fetch logs in background thread
+        def fetch_logs():
+            all_logs = []
+            for d in online_devices:
+                try:
+                    host = d["HostName"]
+                    user = d["User"]
+                    
+                    # Get last 30 lines of the log file
+                    log_cmd = "tail -30 ~/Documents/LightsOff_Project/pressure_listener.log 2>&1 || echo 'Log file not found'"
+                    
+                    ssh_cmd = [
+                        "sshpass", "-p", "lightsoff", "ssh",
+                        "-o", "StrictHostKeyChecking=no",
+                        "-o", "ConnectTimeout=5",
+                        f"{user}@{host}",
+                        log_cmd,
+                    ]
+                    
+                    result = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=10)
+                    
+                    if result.returncode == 0:
+                        log_content = result.stdout.strip()
+                        if log_content:
+                            all_logs.append(f"[b]─── {d['Host']} ───[/b]\n{log_content}\n")
+                            self.call_from_thread(self._log, f"Retrieved logs from {d['Host']}", "success")
+                        else:
+                            all_logs.append(f"[b]─── {d['Host']} ───[/b]\n[dim]No log output available[/dim]\n")
+                    else:
+                        all_logs.append(f"[b]─── {d['Host']} ───[/b]\n[#ff5555]Failed to retrieve logs[/#ff5555]\n")
+                        self.call_from_thread(self._log, f"Failed to retrieve logs from {d['Host']}", "error")
+                        
+                except Exception as e:
+                    all_logs.append(f"[b]─── {d['Host']} ───[/b]\n[#ff5555]Error: {str(e)}[/#ff5555]\n")
+                    self.call_from_thread(self._log, f"Error fetching logs from {d['Host']}: {e}", "error")
+            
+            # Show all logs
+            logs_text = "\n".join(all_logs) if all_logs else "[dim]No logs available[/dim]"
+            self.call_from_thread(self._set_operation,
+                "Pressure Listener Logs",
+                f"[b]Pressure Listener Logs (last 30 lines)[/b]\n\n"
+                f"{logs_text}\n"
+                f"[dim]Showing logs from {len(online_devices)} device(s)[/dim]"
+            )
+        
+        thread = threading.Thread(target=fetch_logs, daemon=True)
+        thread.start()
+
+    async def _do_kill_pressure_listeners(self) -> None:
+        """Kill pressure listeners on selected devices."""
+        devices = self.appstate.get("selected_devices", [])
+        
+        if not devices:
+            self._log("No devices selected", "warning")
+            self._set_operation(
+                "Kill Pressure Listeners",
+                "[#ff5555]No devices selected.[/#ff5555]\n\n"
+                "Please run [b]Discover robots[/b] first."
+            )
+            return
+        
+        # Check which devices are online
+        online_devices = check_online_devices(devices)
+        
+        if not online_devices:
+            self._log("No devices are currently online", "warning")
+            self._set_operation(
+                "Kill Pressure Listeners",
+                "[#ff5555]No devices are currently online.[/#ff5555]\n\n"
+                f"Selected {len(devices)} device(s), but none are reachable.\n\n"
+                "Please check device connectivity."
+            )
+            return
+        
+        offline_count = len(devices) - len(online_devices)
+        if offline_count > 0:
+            self._log(f"Warning: {offline_count} device(s) are offline and will be skipped", "warning")
+        
+        self._log(f"Killing pressure listeners on {len(online_devices)} online device(s)...", "info")
+        self._set_operation(
+            "Kill Pressure Listeners",
+            f"[b]Stopping listeners on {len(online_devices)} device(s)...[/b]\n\n"
+            "[dim]This will kill PressureListener.py processes.\n\n"
+            "Please wait...[/dim]"
+        )
+        
+        # Kill listeners in background thread
+        def kill_listeners():
+            results = []
+            for d in online_devices:
+                try:
+                    host = d["HostName"]
+                    user = d["User"]
+                    
+                    # Kill PressureListener processes
+                    kill_cmd = (
+                        "pkill -9 -f 'PressureListener.py' 2>/dev/null; "
+                        "pkill -9 -f 'nohup python3 cambots/PressureRobot/PressureListener' 2>/dev/null; "
+                        "sleep 1; "
+                        "ps aux | grep PressureListener | grep -v grep || echo 'All killed'"
+                    )
+                    
+                    ssh_cmd = [
+                        "sshpass", "-p", "lightsoff", "ssh",
+                        "-o", "StrictHostKeyChecking=no",
+                        "-o", "ConnectTimeout=5",
+                        f"{user}@{host}",
+                        kill_cmd,
+                    ]
+                    
+                    result = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=10)
+                    
+                    if result.returncode == 0:
+                        if "All killed" in result.stdout:
+                            results.append(f"[#50fa7b]✓[/#50fa7b] {d['Host']}: Listeners stopped")
+                            self.call_from_thread(self._log, f"Pressure listeners stopped on {d['Host']}", "success")
+                        else:
+                            results.append(f"[#ffb86c]⚠[/#ffb86c] {d['Host']}: May still be running")
+                            self.call_from_thread(self._log, f"Unclear status on {d['Host']}", "warning")
+                    else:
+                        results.append(f"[#ff5555]✗[/#ff5555] {d['Host']}: Failed to kill")
+                        self.call_from_thread(self._log, f"Failed to kill listeners on {d['Host']}", "error")
+                        
+                except Exception as e:
+                    results.append(f"[#ff5555]✗[/#ff5555] {d['Host']}: {str(e)}")
+                    self.call_from_thread(self._log, f"Error killing listeners on {d['Host']}: {e}", "error")
+            
+            # Show final results
+            results_text = "\n".join(results)
+            self.call_from_thread(self._set_operation,
+                "Kill Pressure Listeners Complete",
+                f"[b]Listener Status:[/b]\n\n"
+                f"{results_text}\n\n"
+                f"Devices processed: {len(online_devices)}/{len(devices)}\n\n"
+                "[dim]You can now restart listeners if needed.[/dim]"
+            )
+        
+        thread = threading.Thread(target=kill_listeners, daemon=True)
+        thread.start()
+
+    # ── End Pressure Listener Management ─────────────────────────────────────
 
     async def _do_tracking(self, mode: str) -> None:
         """Start tracking operation."""
@@ -2585,6 +3265,50 @@ class LightsOffDashboard(App):
             "  • Ensure safe clearance from obstacles\n"
             "  • Ready for next operation\n\n"
             "[dim]Crane control integration in progress...[/dim]"
+        )
+
+    async def _do_pressure_manual(self) -> None:
+        """Open manual control interface for pressure motor."""
+        self._log("Opening pressure motor manual control", "info")
+        self._set_operation("Pressure Motor Manual Control", "")
+        
+        # Display the pressure motor control form
+        operation_view = self.query_one("#operation", OperationView)
+        
+        # Get devices to show device info in the form
+        devices = self.appstate.get("selected_devices", [])
+        operation_view.show_pressure_form(devices)
+
+    async def _do_monitor_pressure(self) -> None:
+        """Monitor pressure sensors in real-time."""
+        self._log("Starting pressure monitoring", "info")
+        self._set_operation(
+            "Pressure Monitoring",
+            "[b]Pressure Sensor Monitor[/b]\n\n"
+            "[dim]Real-time pressure monitoring will be displayed here.[/dim]\n\n"
+            "Features:\n"
+            "  • Live pressure readings from all sensors\n"
+            "  • Graphical visualization\n"
+            "  • Alert thresholds\n"
+            "  • Data logging\n\n"
+            "[#ffb86c]Coming soon...[/#ffb86c]\n\n"
+            "[dim]This feature is under development.[/dim]"
+        )
+
+    async def _do_calibrate_pressure(self) -> None:
+        """Calibrate pressure sensors."""
+        self._log("Starting pressure sensor calibration", "info")
+        self._set_operation(
+            "Pressure Calibration",
+            "[b]Pressure Sensor Calibration[/b]\n\n"
+            "[dim]Calibration wizard for pressure sensors.[/dim]\n\n"
+            "Calibration steps:\n"
+            "  1. Zero calibration (atmospheric pressure)\n"
+            "  2. Reference point calibration\n"
+            "  3. Linearity verification\n"
+            "  4. Save calibration data\n\n"
+            "[#ffb86c]Coming soon...[/#ffb86c]\n\n"
+            "[dim]This feature is under development.[/dim]"
         )
 
     async def _do_crane_stop(self) -> None:

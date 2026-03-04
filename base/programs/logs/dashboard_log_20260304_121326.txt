@@ -1,0 +1,13 @@
+=== Dashboard Log Started at 2026-03-04 12:13:26 ===
+[2026-03-04 12:13:26] [SUCCESS] Dashboard started
+[2026-03-04 12:13:27] [INFO] Refreshing device list...
+[2026-03-04 12:13:28] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-04 12:13:28] [SUCCESS] Found 6 device(s), 1 online
+[2026-03-04 12:13:31] [INFO] Starting pressure listeners on 1 online device(s)...
+[2026-03-04 12:13:43] [ERROR] Failed to start listener on lightsoff-j10
+[2026-03-04 12:13:46] [INFO] Opening pressure motor manual control
+[2026-03-04 12:13:48] [INFO] Connecting to pressure motor on 1 device(s)...
+[2026-03-04 12:13:48] [ERROR] Connection failed on lightsoff-j10: Connection failed: 'ResultBusHwIds' object has no attribute 'size'
+[2026-03-04 12:19:05] [INFO] Shutting down...
+[2026-03-04 12:19:07] [SUCCESS] UDP server closed
+=== Dashboard Log Ended at 2026-03-04 12:19:08 ===

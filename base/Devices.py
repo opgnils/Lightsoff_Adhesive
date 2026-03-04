@@ -377,18 +377,22 @@ def launch_remote_adhesive_debug(device, arguments: str):
     return True, thread
 
 def ensure_adhesive_listener_running(device, port: int = 5001):
-    """Ensure AdhesiveListener.py is running on the remote device.
+    """Ensure UnifiedListener.py is running on the remote device.
+    
+    This now starts the unified listener which handles BOTH adhesive and pressure motors.
+    The listener listens on port 5001 (adhesive) and port 5002 (pressure).
 
     Checks for an existing process and starts one if necessary.
     """
     host = device["HostName"]
     user = device["User"]
 
-    # First, kill any existing AdhesiveListener process and its wrapper
-    # Need to kill both the bash wrapper and the Python process
+    # First, kill any existing listener processes (old and new)
     kill_listener_cmd = (
+        "pkill -9 -f 'UnifiedListener.py' 2>/dev/null; "
         "pkill -9 -f 'AdhesiveListener.py' 2>/dev/null; "
-        "pkill -9 -f 'nohup python3 cambots/AdhesiveRobot/AdhesiveListener' 2>/dev/null; "
+        "pkill -9 -f 'PressureListener.py' 2>/dev/null; "
+        "pkill -9 -f 'nohup python3 cambots' 2>/dev/null; "
         "true"
     )
     
@@ -407,15 +411,14 @@ def ensure_adhesive_listener_running(device, port: int = 5001):
     
     try:
         subprocess.run(ssh_kill, capture_output=True, text=True, timeout=10)
-        print(f"[AdhesiveListener] Killed any existing listener on {device['Host']}")
-        time.sleep(1)  # Give the OS time to release the port (increased from 0.5)
+        print(f"[UnifiedListener] Killed any existing listeners on {device['Host']}")
+        time.sleep(1)  # Give the OS time to release the ports
     except Exception as e:
-        print(f"[AdhesiveListener] Warning: Could not kill existing listener on {device['Host']}: {e}")
+        print(f"[UnifiedListener] Warning: Could not kill existing listeners on {device['Host']}: {e}")
 
-    # Command to check if AdhesiveListener is already running
-    # Use a more flexible pattern that catches both the script name and the full path
+    # Command to check if UnifiedListener is already running
     check_cmd = (
-        'ps aux | grep -E "AdhesiveListener|cambots/AdhesiveRobot/AdhesiveListener" | grep -v grep'
+        'ps aux | grep -E "UnifiedListener|cambots/UnifiedListener" | grep -v grep'
     )
 
     ssh_check = [
@@ -435,18 +438,18 @@ def ensure_adhesive_listener_running(device, port: int = 5001):
         result = subprocess.run(ssh_check, capture_output=True, text=True, timeout=10)
         already_running = result.returncode == 0 and result.stdout.strip() != ""
     except Exception as e:
-        print(f"[AdhesiveListener] Error checking listener on {device['Host']}: {e}")
+        print(f"[UnifiedListener] Error checking listener on {device['Host']}: {e}")
         already_running = False
 
     if already_running:
-        print(f"[AdhesiveListener] Already running on {device['Host']}")
+        print(f"[UnifiedListener] Already running on {device['Host']}")
         return True
 
-    # Start the listener in the background using nohup
+    # Start the unified listener in the background using nohup
     start_cmd = (
         "cd ~/Documents/LightsOff_Project && "
-        "nohup python3 cambots/AdhesiveRobot/AdhesiveListener.py "
-        ">> adhesive_listener.log 2>&1 &"
+        "nohup python3 cambots/UnifiedListener.py "
+        ">> unified_listener.log 2>&1 &"
     )
 
     ssh_start = [
@@ -475,8 +478,11 @@ def ensure_adhesive_listener_running(device, port: int = 5001):
             verify_result = subprocess.run(ssh_check, capture_output=True, text=True, timeout=10)
             process_running = verify_result.returncode == 0 and verify_result.stdout.strip() != ""
             
-            # Second check: Verify port 5001 is listening (more reliable)
-            port_check_cmd = f"lsof -i :{port} -sTCP:LISTEN 2>/dev/null || netstat -ln 2>/dev/null | grep ':{port}.*LISTEN' || true"
+            # Second check: Verify ports 5001 and 5002 are listening (more reliable)
+            port_check_cmd = (
+                f"(lsof -i :{port} -sTCP:LISTEN 2>/dev/null || netstat -ln 2>/dev/null | grep ':{port}.*LISTEN') && "
+                f"(lsof -i :5002 -sTCP:LISTEN 2>/dev/null || netstat -ln 2>/dev/null | grep ':5002.*LISTEN') || true"
+            )
             ssh_port_check = [
                 "sshpass", "-p", "lightsoff", "ssh",
                 "-o", "StrictHostKeyChecking=no",
@@ -489,17 +495,24 @@ def ensure_adhesive_listener_running(device, port: int = 5001):
             
             if process_running or port_listening:
                 verification_method = "process check" if process_running else "port listening check"
-                print(f"[AdhesiveListener] Successfully started and verified on {device['Host']} via {verification_method} (attempt {attempt + 1})")
+                print(f"[UnifiedListener] Successfully started and verified on {device['Host']} via {verification_method} (attempt {attempt + 1})")
                 return True
         
         # If we get here, verification failed after all attempts
         # But let's be lenient - if the start command succeeded, assume it worked
-        print(f"[AdhesiveListener] Started on {device['Host']} but verification inconclusive after {max_attempts} attempts")
-        print(f"[AdhesiveListener] Assuming success - listener may still be initializing")
+        print(f"[UnifiedListener] Started on {device['Host']} but verification inconclusive after {max_attempts} attempts")
+        print(f"[UnifiedListener] Assuming success - listener may still be initializing")
         return True  # Changed from False to True to be more lenient
             
     except Exception as e:
-        print(f"[AdhesiveListener] Failed to start on {device['Host']}: {e}")
+        print(f"[UnifiedListener] Failed to start on {device['Host']}: {e}")
         return False
 
 
+def ensure_pressure_listener_running(device, port: int = 5002):
+    """Ensure pressure motors are available via UnifiedListener.
+    
+    This is now just an alias to ensure_adhesive_listener_running since
+    the UnifiedListener handles both adhesive and pressure motors.
+    """
+    return ensure_adhesive_listener_running(device, port)

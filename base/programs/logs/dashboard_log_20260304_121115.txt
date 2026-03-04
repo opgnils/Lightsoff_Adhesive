@@ -1,0 +1,23 @@
+=== Dashboard Log Started at 2026-03-04 12:11:15 ===
+[2026-03-04 12:11:15] [SUCCESS] Dashboard started
+[2026-03-04 12:11:19] [WARNING] No devices selected
+[2026-03-04 12:11:21] [INFO] Refreshing device list...
+[2026-03-04 12:11:22] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-04 12:11:22] [SUCCESS] Found 6 device(s), 1 online
+[2026-03-04 12:11:25] [INFO] Starting pressure listeners on 1 online device(s)...
+[2026-03-04 12:11:38] [ERROR] Failed to start listener on lightsoff-j10
+[2026-03-04 12:11:40] [INFO] Opening pressure motor manual control
+[2026-03-04 12:11:42] [INFO] Connecting to pressure motor on 1 device(s)...
+[2026-03-04 12:11:42] [ERROR] Connection failed on lightsoff-j10: Connection failed: 'ResultBusHwIds' object is not iterable
+[2026-03-04 12:11:49] [WARNING] Please enter a velocity value
+[2026-03-04 12:11:57] [INFO] Setting velocity to 30 on 1 device(s)
+[2026-03-04 12:11:57] [ERROR] Failed on lightsoff-j10: Not connected
+[2026-03-04 12:12:01] [INFO] Setting velocity to 30 on 1 device(s)
+[2026-03-04 12:12:01] [ERROR] Failed on lightsoff-j10: Not connected
+[2026-03-04 12:12:03] [INFO] Stopping pressure motor on 1 device(s)
+[2026-03-04 12:12:03] [ERROR] Stop failed on lightsoff-j10: Not connected
+[2026-03-04 12:12:05] [INFO] Connecting to pressure motor on 1 device(s)...
+[2026-03-04 12:12:05] [ERROR] Connection failed on lightsoff-j10: Connection failed: 'ResultBusHwIds' object is not iterable
+[2026-03-04 12:12:09] [INFO] Shutting down...
+[2026-03-04 12:12:11] [SUCCESS] UDP server closed
+=== Dashboard Log Ended at 2026-03-04 12:12:11 ===

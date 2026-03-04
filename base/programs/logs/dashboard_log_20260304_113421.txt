@@ -1,0 +1,7 @@
+=== Dashboard Log Started at 2026-03-04 11:34:21 ===
+[2026-03-04 11:34:21] [SUCCESS] Dashboard started
+[2026-03-04 11:34:26] [INFO] Opening pressure motor manual control
+[2026-03-04 11:34:31] [ERROR] Nanotec nanolib library not available. Install with: pip install nanotec-nanolib
+[2026-03-04 11:52:53] [INFO] Shutting down...
+[2026-03-04 11:52:55] [SUCCESS] UDP server closed
+=== Dashboard Log Ended at 2026-03-04 11:52:55 ===
