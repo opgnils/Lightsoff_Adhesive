@@ -828,12 +828,12 @@ def cli_menu_assembly_robot(appstate: dict):
 
 
 def _send_adhesive_command_tcp(device, cmd: str, port: int = 5001, timeout: float = 2.0):
-    """Send a single adhesive command to the Jetson listener over TCP.
+    """Send a single adhesive command to the unified listener over TCP.
 
     Args:
         device (dict): Device info with HostName.
         cmd (str): Command string like "0,200,0".
-        port (int): TCP port where AdhesiveListener is running.
+        port (int): TCP port where UnifiedListener is running.
         timeout (float): Socket timeout in seconds.
     """
     host = device["HostName"]
@@ -850,7 +850,7 @@ def _run_adhesive_profile(appstate: dict):
     """Load and execute an adhesive profile CSV over time.
 
     CSV format: time, motor1, motor2, motor3 (one row per step).
-    Values are sent as a triple "m1,m2,m3" to the adhesive listener.
+    Values are sent as a triple "m1,m2,m3" to the unified listener.
     """
     devices = appstate["selected_devices"]
     if not devices:
@@ -1011,7 +1011,7 @@ def cli_menu_adhesive_robot(appstate: dict):
                     "-o",
                     "ConnectTimeout=3",
                     f"{user}@{d['HostName']}",
-                    'ps aux | grep "AdhesiveListener.py" | grep -v grep',
+                    'ps aux | grep "UnifiedListener.py" | grep -v grep',
                 ]
                 state = "unknown"
                 try:
@@ -1053,7 +1053,7 @@ def cli_menu_adhesive_robot(appstate: dict):
 
 
 def _cli_restart_adhesive_listener(appstate: dict):
-    """Kill and restart the adhesive listener on all selected robots.
+    """Kill and restart the unified listener on all selected robots.
 
     This is useful if the listener or serial stack got stuck and no
     commands (including STOP ALL) are going through anymore.
@@ -1066,12 +1066,12 @@ def _cli_restart_adhesive_listener(appstate: dict):
         return
 
     print("\033c", end="")
-    print("Restarting adhesive listeners on selected robots...")
+    print("Restarting unified listeners on selected robots...")
 
     for d in devices:
         host = d["Host"]
         user = d["User"]
-        # First, try to kill any running AdhesiveListener.py processes
+        # First, try to kill any running UnifiedListener.py processes
         kill_cmd = [
             "sshpass",
             "-p",
@@ -1082,13 +1082,13 @@ def _cli_restart_adhesive_listener(appstate: dict):
             "-o",
             "ConnectTimeout=5",
             f"{user}@{d['HostName']}",
-            "pkill -f AdhesiveListener.py || true",
+            "pkill -f UnifiedListener.py || true",
         ]
         try:
             subprocess.run(kill_cmd, capture_output=True, text=True, timeout=10)
-            print(f"[{host}] Killed any existing AdhesiveListener.py processes (if running).")
+            print(f"[{host}] Killed any existing UnifiedListener.py processes (if running).")
         except Exception as e:
-            print(f"[{host}] Error attempting to kill AdhesiveListener.py: {e}")
+            print(f"[{host}] Error attempting to kill UnifiedListener.py: {e}")
 
         # Then ensure the listener is started again using the existing helper
         try:
@@ -1100,7 +1100,7 @@ def _cli_restart_adhesive_listener(appstate: dict):
         except Exception as e:
             print(f"[{host}] Error starting listener: {e}")
 
-    print("\nDone restarting adhesive listeners.")
+    print("\nDone restarting unified listeners.")
     time.sleep(2)
 
 
@@ -1110,7 +1110,7 @@ def _cli_emergency_stop(appstate: dict):
     This is intended for the case where the normal STOP ALL might not work
     due to a wedged listener or transient connection issue. The idea is:
     - Try to send a STOP ALL triple (0,0,0) to all selected devices.
-    - Then restart the adhesive listener processes on those devices,
+    - Then restart the unified listener processes on those devices,
       which in your experience also ensures everything is in a safe state.
     """
 
@@ -1122,7 +1122,7 @@ def _cli_emergency_stop(appstate: dict):
 
     print("\n=== EMERGENCY STOP: killing listeners, sending STOP ALL, and restarting ===")
 
-    # 1) Kill any existing AdhesiveListener.py on all selected robots.
+    # 1) Kill any existing UnifiedListener.py on all selected robots.
     user = "lightsoff"
     for d in devices:
         host = d.get("Host") or d.get("HostName") or "?"
@@ -1140,13 +1140,13 @@ def _cli_emergency_stop(appstate: dict):
             "-o",
             "ConnectTimeout=5",
             f"{user}@{d['HostName']}",
-            "pkill -f AdhesiveListener.py || true",
+            "pkill -f UnifiedListener.py || true",
         ]
         try:
             subprocess.run(kill_cmd, capture_output=True, text=True, timeout=10)
-            print(f"[{host}] Killed AdhesiveListener.py (if running).")
+            print(f"[{host}] Killed UnifiedListener.py (if running).")
         except Exception as e:
-            print(f"[{host}] Error attempting to kill AdhesiveListener.py during EMERGENCY STOP: {e}")
+            print(f"[{host}] Error attempting to kill UnifiedListener.py during EMERGENCY STOP: {e}")
 
     # 2) Attempt a STOP ALL triple to all devices (in case any listener is still responsive
     #    or there are other consumers of the adhesive command port).
@@ -1163,12 +1163,12 @@ def _cli_emergency_stop(appstate: dict):
         time.sleep(0.1)
 
     # 3) Restart listeners so the system returns to a known-good state for further control.
-    print("Now restarting adhesive listeners on all selected robots...\n")
+    print("Now restarting unified listeners on all selected robots...\n")
     _cli_restart_adhesive_listener(appstate)
 
 
 def _cli_adhesive_action(appstate: dict, engage: bool):
-    """Adhesive control loop using a persistent Jetson listener.
+    """Adhesive control loop using a persistent unified listener.
 
     Lets the user choose manual RPM/flowrates and STOP ALL.
     """

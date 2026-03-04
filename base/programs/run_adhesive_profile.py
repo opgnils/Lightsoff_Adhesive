@@ -25,12 +25,12 @@ from base.Devices import get_devices, check_online_devices, ensure_adhesive_list
 
 
 def send_adhesive_command_tcp(device, cmd: str, port: int = 5001, timeout: float = 2.0):
-    """Send a single adhesive command to the Jetson listener over TCP.
+    """Send a single adhesive command to the unified listener over TCP.
 
     Args:
         device (dict): Device info with HostName.
         cmd (str): Command string like "0,200,0".
-        port (int): TCP port where AdhesiveListener is running.
+        port (int): TCP port where UnifiedListener is running.
         timeout (float): Socket timeout in seconds.
         
     Returns:
@@ -119,7 +119,7 @@ def run_profile(profile_path: str, devices: list):
     print(f"{'='*60}")
     
     # Ensure listeners are running
-    print("\n[1/3] Ensuring adhesive listeners are running...")
+    print("\n[1/3] Ensuring unified listeners are running...")
     for d in devices:
         try:
             ensure_adhesive_listener_running(d)

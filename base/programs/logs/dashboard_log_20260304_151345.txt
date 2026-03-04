@@ -1,0 +1,54 @@
+=== Dashboard Log Started at 2026-03-04 15:13:45 ===
+[2026-03-04 15:13:45] [SUCCESS] Dashboard started
+[2026-03-04 15:13:47] [INFO] Refreshing device list...
+[2026-03-04 15:13:48] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-04 15:13:48] [SUCCESS] Found 6 device(s), 1 online
+[2026-03-04 15:13:51] [INFO] Starting code update on 1 online device(s)...
+[2026-03-04 15:13:54] [SUCCESS] Code update completed on 1 device(s), 26 file(s) updated
+[2026-03-04 15:13:59] [INFO] Starting adhesive manual control on 1 online device(s)
+[2026-03-04 15:13:59] [INFO] Manual control ready - ensure listeners are running from Listeners menu
+[2026-03-04 15:14:02] [INFO] Sending motor command to 1 online device(s): 2000,0,0
+[2026-03-04 15:14:02] [SUCCESS] Command sent to lightsoff-j10: 2000,0,0
+[2026-03-04 15:14:06] [INFO] Sending motor command to 1 online device(s): 2000,200,0
+[2026-03-04 15:14:06] [SUCCESS] Command sent to lightsoff-j10: 2000,200,0
+[2026-03-04 15:14:07] [INFO] Sending motor command to 1 online device(s): 2000,200,1000
+[2026-03-04 15:14:07] [SUCCESS] Command sent to lightsoff-j10: 2000,200,1000
+[2026-03-04 15:14:11] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-04 15:14:11] [SUCCESS] Motors stopped on lightsoff-j10
+[2026-03-04 15:14:13] [INFO] Starting adhesive listeners on 1 online device(s)...
+[2026-03-04 15:14:24] [ERROR] Failed to start listener on lightsoff-j10
+[2026-03-04 15:14:29] [INFO] Killing Python processes on 1 online device(s)...
+[2026-03-04 15:14:32] [SUCCESS] Cleanup completed on 1 device(s)
+[2026-03-04 15:14:36] [INFO] Starting adhesive manual control on 1 online device(s)
+[2026-03-04 15:14:36] [INFO] Manual control ready - ensure listeners are running from Listeners menu
+[2026-03-04 15:14:40] [INFO] Sending motor command to 1 online device(s): 2000,2,0
+[2026-03-04 15:14:41] [ERROR] Failed to send to lightsoff-j10 after 3 retries: [Errno 111] Connection refused
+[2026-03-04 15:14:41] [WARNING] No commands succeeded - listener may not be ready yet
+[2026-03-04 15:14:47] [INFO] Sending motor command to 1 online device(s): 2000,200,0
+[2026-03-04 15:14:48] [ERROR] Failed to send to lightsoff-j10 after 3 retries: [Errno 111] Connection refused
+[2026-03-04 15:14:48] [WARNING] No commands succeeded - listener may not be ready yet
+[2026-03-04 15:14:51] [INFO] Sending motor command to 1 online device(s): 2000,200,200
+[2026-03-04 15:14:53] [ERROR] Failed to send to lightsoff-j10 after 3 retries: [Errno 111] Connection refused
+[2026-03-04 15:14:53] [WARNING] No commands succeeded - listener may not be ready yet
+[2026-03-04 15:14:54] [INFO] Restarting adhesive listeners on 1 online device(s)...
+[2026-03-04 15:15:07] [ERROR] Failed to restart listener on lightsoff-j10
+[2026-03-04 15:15:10] [INFO] Starting adhesive manual control on 1 online device(s)
+[2026-03-04 15:15:10] [INFO] Manual control ready - ensure listeners are running from Listeners menu
+[2026-03-04 15:15:13] [INFO] Sending motor command to 1 online device(s): 2000,0,0
+[2026-03-04 15:15:13] [SUCCESS] Command sent to lightsoff-j10: 2000,0,0
+[2026-03-04 15:15:17] [INFO] Sending motor command to 1 online device(s): 2000,200,0
+[2026-03-04 15:15:17] [SUCCESS] Command sent to lightsoff-j10: 2000,200,0
+[2026-03-04 15:15:24] [WARNING] No devices are currently online
+[2026-03-04 15:15:26] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-04 15:15:26] [SUCCESS] Motors stopped on lightsoff-j10
+[2026-03-04 15:15:30] [INFO] Starting adhesive listeners on 1 online device(s)...
+[2026-03-04 15:15:31] [SUCCESS] UnifiedListener running on lightsoff-j10
+[2026-03-04 15:15:39] [INFO] Starting adhesive manual control on 1 online device(s)
+[2026-03-04 15:15:39] [INFO] Manual control ready - ensure listeners are running from Listeners menu
+[2026-03-04 15:15:41] [INFO] Sending motor command to 1 online device(s): 2000,0,0
+[2026-03-04 15:15:41] [SUCCESS] Command sent to lightsoff-j10: 2000,0,0
+[2026-03-04 15:15:43] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-04 15:15:43] [SUCCESS] Motors stopped on lightsoff-j10
+[2026-03-04 15:15:44] [INFO] Shutting down...
+[2026-03-04 15:15:46] [SUCCESS] UDP server closed
+=== Dashboard Log Ended at 2026-03-04 15:15:46 ===

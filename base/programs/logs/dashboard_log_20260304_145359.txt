@@ -1,0 +1,49 @@
+=== Dashboard Log Started at 2026-03-04 14:53:59 ===
+[2026-03-04 14:53:59] [SUCCESS] Dashboard started
+[2026-03-04 14:54:00] [INFO] Refreshing device list...
+[2026-03-04 14:54:01] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-04 14:54:01] [SUCCESS] Found 6 device(s), 0 online
+[2026-03-04 14:54:08] [INFO] Starting code update on 1 online device(s)...
+[2026-03-04 14:54:11] [SUCCESS] Code update completed on 1 device(s), 0 file(s) updated
+[2026-03-04 14:54:18] [INFO] Starting adhesive manual control on 1 online device(s)
+[2026-03-04 14:54:18] [INFO] Manual control ready - ensure listeners are running from Listeners menu
+[2026-03-04 14:54:20] [INFO] Sending motor command to 1 online device(s): 5000,0,0
+[2026-03-04 14:54:21] [ERROR] Failed to send to lightsoff-j10 after 3 retries: [Errno 111] Connection refused
+[2026-03-04 14:54:21] [WARNING] No commands succeeded - listener may not be ready yet
+[2026-03-04 14:54:25] [INFO] Sending motor command to 1 online device(s): 5000,200,200
+[2026-03-04 14:54:26] [ERROR] Failed to send to lightsoff-j10 after 3 retries: [Errno 111] Connection refused
+[2026-03-04 14:54:26] [WARNING] No commands succeeded - listener may not be ready yet
+[2026-03-04 14:54:35] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-04 14:54:36] [ERROR] Failed to stop motors on lightsoff-j10 after 3 retries: [Errno 111] Connection refused
+[2026-03-04 14:54:37] [INFO] Refreshing device list...
+[2026-03-04 14:54:38] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-04 14:54:38] [SUCCESS] Found 6 device(s), 1 online
+[2026-03-04 14:54:41] [INFO] Starting adhesive manual control on 1 online device(s)
+[2026-03-04 14:54:41] [INFO] Manual control ready - ensure listeners are running from Listeners menu
+[2026-03-04 14:54:45] [INFO] Sending motor command to 1 online device(s): 5000,0,0
+[2026-03-04 14:54:46] [ERROR] Failed to send to lightsoff-j10 after 3 retries: [Errno 111] Connection refused
+[2026-03-04 14:54:46] [WARNING] No commands succeeded - listener may not be ready yet
+[2026-03-04 14:54:49] [INFO] Sending motor command to 1 online device(s): 5000,200,0
+[2026-03-04 14:54:50] [ERROR] Failed to send to lightsoff-j10 after 3 retries: [Errno 111] Connection refused
+[2026-03-04 14:54:50] [WARNING] No commands succeeded - listener may not be ready yet
+[2026-03-04 14:54:52] [INFO] Sending motor command to 1 online device(s): 5000,200,200
+[2026-03-04 14:54:53] [INFO] Sending motor command to 1 online device(s): 5000,200,200
+[2026-03-04 14:54:53] [ERROR] Failed to send to lightsoff-j10 after 3 retries: [Errno 111] Connection refused
+[2026-03-04 14:54:53] [WARNING] No commands succeeded - listener may not be ready yet
+[2026-03-04 14:54:54] [ERROR] Failed to send to lightsoff-j10 after 3 retries: [Errno 111] Connection refused
+[2026-03-04 14:54:54] [WARNING] No commands succeeded - listener may not be ready yet
+[2026-03-04 14:54:55] [INFO] Starting adhesive listeners on 1 online device(s)...
+[2026-03-04 14:55:06] [ERROR] Failed to start listener on lightsoff-j10
+[2026-03-04 14:55:09] [INFO] Starting adhesive manual control on 1 online device(s)
+[2026-03-04 14:55:09] [INFO] Manual control ready - ensure listeners are running from Listeners menu
+[2026-03-04 14:55:12] [INFO] Sending motor command to 1 online device(s): 5000,0,0
+[2026-03-04 14:55:12] [SUCCESS] Command sent to lightsoff-j10: 5000,0,0
+[2026-03-04 14:55:14] [INFO] Sending motor command to 1 online device(s): 5000,200,0
+[2026-03-04 14:55:14] [SUCCESS] Command sent to lightsoff-j10: 5000,200,0
+[2026-03-04 14:55:15] [INFO] Sending motor command to 1 online device(s): 5000,200,200
+[2026-03-04 14:55:15] [SUCCESS] Command sent to lightsoff-j10: 5000,200,200
+[2026-03-04 14:55:17] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-04 14:55:17] [SUCCESS] Motors stopped on lightsoff-j10
+[2026-03-04 14:57:21] [INFO] Shutting down...
+[2026-03-04 14:57:23] [SUCCESS] UDP server closed
+=== Dashboard Log Ended at 2026-03-04 14:57:23 ===

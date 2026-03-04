@@ -38,7 +38,7 @@ The adhesive profile execution has been redesigned to work **directly within the
 ### Step 4: Execute Profile
 1. Click on any profile name (e.g., **○ fast_rampUp.csv**)
 2. Profile execution starts **immediately** and automatically:
-   - ✅ Adhesive listeners are started on all devices
+   - ✅ Unified listeners are started on all devices
    - ✅ Profile CSV is loaded and validated
    - ✅ Commands are sent at scheduled times
    - ✅ Progress is shown in the Status Log (bottom-right)

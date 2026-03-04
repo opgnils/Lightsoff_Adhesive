@@ -18,7 +18,7 @@ The Dashboard provides 4 adhesive control options:
 ### 1. Manual Control
 - **Purpose**: Send individual motor commands interactively
 - **How it works**:
-  - Ensures adhesive listeners are running on all selected devices
+  - Ensures unified listeners are running on all selected devices
   - Displays current motor configuration and limits
   - Provides instructions for sending TCP commands
 
@@ -88,7 +88,7 @@ python3 run_adhesive_profile.py <profile.csv>
 
 ### Features
 - Auto-discovers online devices
-- Ensures adhesive listeners are running (port 5001)
+- Ensures unified listeners are running (port 5001)
 - Loads and validates CSV profile
 - Executes timed motor commands
 - Emergency stop: Press 'q', ESC, or Ctrl+C
@@ -108,7 +108,7 @@ Running adhesive profile: fast_rampUp.csv
 Devices: robot1, robot2
 ============================================================
 
-[1/3] Ensuring adhesive listeners are running...
+[1/3] Ensuring unified listeners are running...
   ✓ Listener ready on robot1
   ✓ Listener ready on robot2
 
@@ -162,9 +162,9 @@ Devices: robot1, robot2
 45.0,  0,    0,    0
 ```
 
-## Adhesive Listener
+## Unified Listener
 
-The `AdhesiveListener.py` service runs on each robot and:
+The `UnifiedListener.py` service runs on each robot and:
 - Listens on TCP port 5001
 - Receives motor command strings (e.g., "1000,500,500")
 - Controls the physical motors via serial/GPIO
@@ -173,10 +173,10 @@ The `AdhesiveListener.py` service runs on each robot and:
 ### Manual Listener Management
 ```bash
 # Check if listener is running
-ssh user@robot_hostname "ps aux | grep AdhesiveListener.py"
+ssh user@robot_hostname "ps aux | grep UnifiedListener.py"
 
 # Start listener manually (if needed)
-ssh user@robot_hostname "cd ~/Documents/LightsOff_Project && python3 cambots/AdhesiveRobot/AdhesiveListener.py &"
+ssh user@robot_hostname "cd ~/Documents/LightsOff_Project && python3 cambots/AdhesiveRobot/UnifiedListener.py &"
 
 # Restart from Dashboard
 # Use: Adhesive Robot -> Restart listener option (in App.py CLI)
@@ -207,10 +207,10 @@ ssh user@robot_hostname "cd ~/Documents/LightsOff_Project && python3 cambots/Adh
 ### Listener Not Responding
 ```bash
 # Check listener status
-ssh user@robot "ps aux | grep AdhesiveListener"
+ssh user@robot "ps aux | grep UnifiedListener"
 
 # Kill and restart
-ssh user@robot "pkill -f AdhesiveListener.py"
+ssh user@robot "pkill -f UnifiedListener.py"
 # Then use Dashboard or run manually
 ```
 

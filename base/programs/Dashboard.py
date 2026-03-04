@@ -852,6 +852,7 @@ class LightsOffDashboard(App):
             ]),
             ("listeners", "4  Listeners", [
                 "Start listeners",
+                "Restart listeners",
                 "Check listener logs",
                 "Kill listeners"
             ]),
@@ -1010,6 +1011,8 @@ class LightsOffDashboard(App):
         elif section == "listeners":
             if action == "Start listeners":
                 await self._do_start_listeners()
+            elif action == "Restart listeners":
+                await self._do_restart_listeners()
             elif action == "Check listener logs":
                 await self._do_check_listener_logs()
             elif action == "Kill listeners":
@@ -1614,8 +1617,8 @@ class LightsOffDashboard(App):
             "Start Listeners",
             f"[b]Starting listeners on {len(online_devices)} device(s)...[/b]\n\n"
             "[dim]The UnifiedListener handles:\n"
-            "  • Adhesive motors (port 5001)\n"
-            "  • Pressure motor (port 5002)\n\n"
+            "  • Adhesive motors (3 motors: VESC + Arduino)\n"
+            "  • Port 5001\n\n"
             "Please wait...[/dim]"
         )
         
@@ -1624,7 +1627,8 @@ class LightsOffDashboard(App):
             results = []
             for d in online_devices:
                 try:
-                    success = ensure_adhesive_listener_running(d)
+                    # Don't force restart - only start if not already running
+                    success = ensure_adhesive_listener_running(d, force_restart=False)
                     if success:
                         results.append(f"[#50fa7b]✓[/#50fa7b] {d['Host']}: UnifiedListener running")
                         self.call_from_thread(self._log, f"UnifiedListener running on {d['Host']}", "success")
@@ -1642,15 +1646,87 @@ class LightsOffDashboard(App):
                 f"[b]Listener Status:[/b]\n\n"
                 f"{results_text}\n\n"
                 f"Devices processed: {len(online_devices)}/{len(devices)}\n\n"
-                "[dim]UnifiedListener handles both adhesive and pressure motors.\n"
+                "[dim]UnifiedListener handles adhesive motors (3 motors).\n"
                 "Listeners are now ready for manual control or profile execution.[/dim]"
             )
         
         thread = threading.Thread(target=start_listeners, daemon=True)
         thread.start()
 
+    async def _do_restart_listeners(self) -> None:
+        """Force restart unified listeners on selected devices (kills and restarts)."""
+        devices = self.appstate.get("selected_devices", [])
+        
+        if not devices:
+            self._log("No devices selected", "warning")
+            self._set_operation(
+                "Restart Listeners",
+                "[#ff5555]No devices selected.[/#ff5555]\n\n"
+                "Please run [b]Discover robots[/b] first."
+            )
+            return
+        
+        # Check which devices are online
+        online_devices = check_online_devices(devices)
+        
+        if not online_devices:
+            self._log("No devices are currently online", "warning")
+            self._set_operation(
+                "Restart Listeners",
+                "[#ff5555]No devices are currently online.[/#ff5555]\n\n"
+                f"Selected {len(devices)} device(s), but none are reachable.\n\n"
+                "Please check device connectivity."
+            )
+            return
+        
+        offline_count = len(devices) - len(online_devices)
+        if offline_count > 0:
+            self._log(f"Warning: {offline_count} device(s) are offline and will be skipped", "warning")
+        
+        self._log(f"Restarting unified listeners on {len(online_devices)} online device(s)...", "info")
+        self._set_operation(
+            "Restart Listeners",
+            f"[b]Restarting listeners on {len(online_devices)} device(s)...[/b]\n\n"
+            "[dim]This will:\n"
+            "  • Kill any existing listeners\n"
+            "  • Wait for port to be released\n"
+            "  • Start fresh UnifiedListener instances\n\n"
+            "Please wait...[/dim]"
+        )
+        
+        # Restart listeners in background thread
+        def restart_listeners():
+            results = []
+            for d in online_devices:
+                try:
+                    # Force restart - kill and start fresh
+                    success = ensure_adhesive_listener_running(d, force_restart=True)
+                    if success:
+                        results.append(f"[#50fa7b]✓[/#50fa7b] {d['Host']}: UnifiedListener restarted")
+                        self.call_from_thread(self._log, f"UnifiedListener restarted on {d['Host']}", "success")
+                    else:
+                        results.append(f"[#ff5555]✗[/#ff5555] {d['Host']}: Failed to restart")
+                        self.call_from_thread(self._log, f"Failed to restart listener on {d['Host']}", "error")
+                except Exception as e:
+                    results.append(f"[#ff5555]✗[/#ff5555] {d['Host']}: {str(e)}")
+                    self.call_from_thread(self._log, f"Error restarting listener on {d['Host']}: {e}", "error")
+            
+            # Show final results
+            results_text = "\n".join(results)
+            self.call_from_thread(self._set_operation,
+                "Restart Listeners Complete",
+                f"[b]Listener Status:[/b]\n\n"
+                f"{results_text}\n\n"
+                f"Devices processed: {len(online_devices)}/{len(devices)}\n\n"
+                "[dim]All listeners have been restarted fresh.\n"
+                "Listeners are now ready for manual control or profile execution.[/dim]"
+            )
+        
+        thread = threading.Thread(target=restart_listeners, daemon=True)
+        thread.start()
+
     async def _do_check_listener_logs(self) -> None:
-        """Check adhesive listener logs on selected devices."""
+        """Check unified listener logs on selected devices."""
         devices = self.appstate.get("selected_devices", [])
         
         if not devices:
@@ -1726,7 +1802,7 @@ class LightsOffDashboard(App):
                 f"[b]Unified Listener Logs (last 30 lines)[/b]\n\n"
                 f"{logs_text}\n"
                 f"[dim]Showing logs from {len(online_devices)} device(s)\n"
-                "Unified listener handles both adhesive (port 5001) and pressure (port 5002) motors.[/dim]"
+                "UnifiedListener handles adhesive motors on port 5001.[/dim]"
             )
         
         thread = threading.Thread(target=fetch_logs, daemon=True)
@@ -1767,51 +1843,7 @@ class LightsOffDashboard(App):
         # Clear emergency stop flag when entering manual control
         self._emergency_stop_flag = False
         
-        # Check if UnifiedListener is already running (don't restart it!)
-        self._log(f"Checking UnifiedListener status on {len(online_devices)} device(s)...", "info")
-        
-        # Verify listeners in background on online devices only
-        def verify_listeners():
-            ready_count = 0
-            for d in online_devices:
-                try:
-                    host = d["HostName"]
-                    user = d["User"]
-                    
-                    # Check if port 5001 (adhesive) is listening - do NOT kill/restart
-                    check_cmd = "lsof -i :5001 -sTCP:LISTEN 2>/dev/null | grep -q python && echo 'LISTENING' || echo 'NOT_LISTENING'"
-                    ssh_cmd = [
-                        "sshpass", "-p", "lightsoff", "ssh",
-                        "-o", "StrictHostKeyChecking=no",
-                        "-o", "ConnectTimeout=5",
-                        f"{user}@{host}",
-                        check_cmd
-                    ]
-                    
-                    result = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=10)
-                    
-                    if result.returncode == 0 and "LISTENING" in result.stdout:
-                        ready_count += 1
-                        self.call_from_thread(self._log, f"✓ Listener ready on {d['Host']}", "success")
-                    else:
-                        self.call_from_thread(self._log, 
-                            f"⚠ Listener NOT running on {d['Host']} - please start it from Listeners menu first", 
-                            "warning")
-                except Exception as e:
-                    self.call_from_thread(self._log, f"✗ Failed to check listener on {d['Host']}: {e}", "error")
-            
-            # Summary message
-            if ready_count == len(online_devices):
-                self.call_from_thread(self._log, f"All {ready_count} listener(s) ready - manual control active", "success")
-            elif ready_count > 0:
-                self.call_from_thread(self._log, f"{ready_count}/{len(online_devices)} listener(s) ready - some devices may not respond", "warning")
-            else:
-                self.call_from_thread(self._log, 
-                    f"⚠ No listeners ready - please start listeners from menu first!", 
-                    "error")
-        
-        thread = threading.Thread(target=verify_listeners, daemon=True)
-        thread.start()
+        self._log("Manual control ready - ensure listeners are running from Listeners menu", "info")
         
         # Show the interactive manual control form (pass online_devices)
         operation_view = self.query_one("#operation", OperationView)
@@ -2130,15 +2162,9 @@ class LightsOffDashboard(App):
         # Run profile execution in background thread
         def execute_profile():
             try:
-                # Ensure listeners are running on online devices only
-                self.call_from_thread(self._log, f"Starting adhesive listeners on {len(online_devices)} device(s)...", "info")
-                for d in online_devices:
-                    try:
-                        ensure_adhesive_listener_running(d)
-                        self.call_from_thread(self._log, f"Listener ready on {d['Host']}", "success")
-                    except Exception as e:
-                        self.call_from_thread(self._log, f"Listener failed on {d['Host']}: {e}", "error")
-                        return
+                # Note: User must ensure listeners are running from Listeners menu first
+                self.call_from_thread(self._log, f"Starting profile execution on {len(online_devices)} device(s)...", "info")
+                self.call_from_thread(self._log, "Ensure listeners are running from Listeners menu", "warning")
                 
                 # Load profile
                 self.call_from_thread(self._log, f"Loading profile: {profile_name}", "info")
@@ -2325,7 +2351,7 @@ class LightsOffDashboard(App):
             "Kill Listeners",
             f"[b]Cleaning up processes on {len(online_devices)} device(s)...[/b]\n\n"
             "[dim]This will kill all Python processes including:\n"
-            "  • UnifiedListener.py (adhesive + pressure motors)\n"
+            "  • UnifiedListener.py (adhesive motors)\n"
             "  • Any other running Python scripts\n\n"
             "Please wait...[/dim]"
         )
@@ -2340,7 +2366,7 @@ class LightsOffDashboard(App):
                     "Kill Listeners Complete",
                     f"[#50fa7b]✓[/#50fa7b] Successfully cleaned up processes on {len(online_devices)} online device(s).\n\n"
                     "All Python processes have been terminated:\n"
-                    "  • UnifiedListener stopped (adhesive + pressure motors)\n"
+                    "  • UnifiedListener stopped (adhesive motors)\n"
                     "  • Other Python scripts killed\n\n"
                     f"Online devices: {len(online_devices)}/{len(devices)}\n\n"
                     "[dim]You can now restart the listeners or run profiles.[/dim]"

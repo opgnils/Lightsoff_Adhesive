@@ -1,0 +1,45 @@
+=== Dashboard Log Started at 2026-03-04 14:57:25 ===
+[2026-03-04 14:57:25] [SUCCESS] Dashboard started
+[2026-03-04 14:57:27] [INFO] Refreshing device list...
+[2026-03-04 14:57:28] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-04 14:57:28] [SUCCESS] Found 6 device(s), 1 online
+[2026-03-04 14:57:31] [INFO] Starting code update on 1 online device(s)...
+[2026-03-04 14:57:33] [SUCCESS] Code update completed on 1 device(s), 0 file(s) updated
+[2026-03-04 14:57:37] [INFO] Starting adhesive listeners on 1 online device(s)...
+[2026-03-04 14:57:38] [SUCCESS] AdhesiveListener running on lightsoff-j10
+[2026-03-04 14:57:45] [INFO] Starting adhesive manual control on 1 online device(s)
+[2026-03-04 14:57:45] [INFO] Manual control ready - ensure listeners are running from Listeners menu
+[2026-03-04 14:57:48] [INFO] Sending motor command to 1 online device(s): 4000,0,0
+[2026-03-04 14:57:48] [SUCCESS] Command sent to lightsoff-j10: 4000,0,0
+[2026-03-04 14:57:51] [INFO] Sending motor command to 1 online device(s): 4000,200,0
+[2026-03-04 14:57:51] [SUCCESS] Command sent to lightsoff-j10: 4000,200,0
+[2026-03-04 14:57:53] [INFO] Sending motor command to 1 online device(s): 4000,200,200
+[2026-03-04 14:57:53] [SUCCESS] Command sent to lightsoff-j10: 4000,200,200
+[2026-03-04 14:57:57] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-04 14:57:57] [SUCCESS] Motors stopped on lightsoff-j10
+[2026-03-04 14:58:02] [INFO] Killing Python processes on 1 online device(s)...
+[2026-03-04 14:58:05] [SUCCESS] Cleanup completed on 1 device(s)
+[2026-03-04 14:58:07] [INFO] Restarting adhesive listeners on 1 online device(s)...
+[2026-03-04 14:58:19] [ERROR] Failed to restart listener on lightsoff-j10
+[2026-03-04 14:58:30] [WARNING] No devices are currently online
+[2026-03-04 14:58:33] [INFO] Refreshing device list...
+[2026-03-04 14:58:34] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-04 14:58:34] [SUCCESS] Found 6 device(s), 1 online
+[2026-03-04 14:58:36] [INFO] Restarting adhesive listeners on 1 online device(s)...
+[2026-03-04 14:58:49] [ERROR] Failed to restart listener on lightsoff-j10
+[2026-03-04 14:58:50] [INFO] Starting adhesive listeners on 1 online device(s)...
+[2026-03-04 14:58:52] [SUCCESS] AdhesiveListener running on lightsoff-j10
+[2026-03-04 14:58:56] [INFO] Starting adhesive manual control on 1 online device(s)
+[2026-03-04 14:58:56] [INFO] Manual control ready - ensure listeners are running from Listeners menu
+[2026-03-04 14:58:59] [INFO] Sending motor command to 1 online device(s): 2000,0,0
+[2026-03-04 14:58:59] [SUCCESS] Command sent to lightsoff-j10: 2000,0,0
+[2026-03-04 14:59:01] [INFO] Sending motor command to 1 online device(s): 2000,200,0
+[2026-03-04 14:59:01] [SUCCESS] Command sent to lightsoff-j10: 2000,200,0
+[2026-03-04 14:59:03] [INFO] Sending motor command to 1 online device(s): 2000,200,200
+[2026-03-04 14:59:03] [SUCCESS] Command sent to lightsoff-j10: 2000,200,200
+[2026-03-04 14:59:04] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-04 14:59:04] [SUCCESS] Motors stopped on lightsoff-j10
+[2026-03-04 14:59:07] [INFO] Found 3 adhesive profile(s)
+[2026-03-04 14:59:07] [INFO] Shutting down...
+[2026-03-04 14:59:09] [SUCCESS] UDP server closed
+=== Dashboard Log Ended at 2026-03-04 14:59:10 ===
