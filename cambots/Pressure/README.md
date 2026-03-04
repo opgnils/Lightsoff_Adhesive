@@ -2,11 +2,24 @@
 
 This module provides control for the Nanotec motor used in the pressure system.
 
+## Motor Specifications
+
+- **Model**: Nanotec PD2-C4118L1804-E-01
+- **Maximum Velocity**: 100 RPM (motor shaft)
+- **Gearbox**: GPLE40-3S-80 (80:1 ratio)
+- **Lead Screw**: TR20x4 (4mm per revolution)
+- **Encoder**: Magnetic absolute, 1024 counts/rev
+
+**Linear Speed Calculation:**
+- Maximum linear speed: 100 RPM × 0.05 mm/rev = 5 mm/min = 0.083 mm/sec
+
 ## Files
 
 - `velocity_test.py` - Standalone test script for motor velocity control
 - `velocity_control.py` - TCP listener for real-time velocity control
 - `start_velocity_listener.sh` - Helper script to start the velocity listener
+- `debug_velocity.py` - Debug script for velocity readback diagnostics
+- `test_velocity_objects.py` - Quick test for CANopen velocity objects
 - `__init__.py` - Python package initialization
 
 ## Usage
@@ -14,9 +27,11 @@ This module provides control for the Nanotec motor used in the pressure system.
 ### 1. Run Velocity Test
 
 The velocity test runs a predefined sequence:
-- Positive velocity (300 RPM) for 2 seconds
-- Negative velocity (-300 RPM) for 2 seconds
+- Positive velocity (100 RPM) for 2 seconds
+- Negative velocity (-100 RPM) for 2 seconds
 - Smooth stop
+
+**Note:** Maximum safe velocity is 100 RPM.
 
 Run from command line:
 ```bash
@@ -63,8 +78,46 @@ echo "500" | nc <remote-host> 5002
 # Stop motor
 echo "0" | nc <remote-host> 5002
 
+# Get actual velocity from encoder
+echo "GET_VELOCITY" | nc <remote-host> 5002
+
 # Shutdown listener
 echo "STOP" | nc <remote-host> 5002
+```
+
+## Protocol
+
+The velocity control listener accepts the following commands on port 5002:
+
+### Set Velocity
+Send an integer value (RPM):
+```
+<velocity_rpm>\n
+```
+Response:
+```
+OK:<velocity>\n
+```
+
+### Get Actual Velocity
+Send:
+```
+GET_VELOCITY\n
+```
+Response:
+```
+ACTUAL:<rpm>\n
+```
+This returns the actual motor velocity from the encoder (Object 0x606C).
+
+### Stop Listener
+Send:
+```
+STOP\n
+```
+Response:
+```
+OK:STOPPING\n
 ```
 
 ## Configuration
@@ -82,6 +135,36 @@ Edit the configuration variables at the top of the Python files:
 - Network connectivity for remote control
 
 ## Troubleshooting
+
+### Velocity Readback Shows 0
+If actual velocity always shows 0 RPM:
+
+1. **Run the debug script** to see what values the motor is reporting:
+   ```bash
+   cd ~/Documents/LightsOff_Project/cambots/Pressure
+   python3 debug_velocity.py
+   ```
+   This will test reading from multiple velocity objects (0x60FF, 0x6043, 0x606C) and show position changes.
+
+2. **Check the listener logs** for debug output:
+   ```bash
+   # Restart listener to see fresh debug output
+   pkill -f velocity_control
+   python3 velocity_control.py
+   
+   # In another terminal, test GET_VELOCITY
+   echo "GET_VELOCITY" | nc localhost 5002
+   ```
+   Look for lines starting with `[DEBUG]` showing what was read from each object.
+
+3. **Verify motor is actually moving**:
+   - Check if you hear/see the motor spinning
+   - Watch the position value (0x6064) - it should change if motor is moving
+   - Try higher velocities (500+ RPM) for more obvious movement
+
+4. **Check mode of operation**:
+   - Must be in Profile Velocity mode (0x6060 = 3)
+   - Some motors need different settings for encoder feedback
 
 ### Motor not found
 - Check USB connection

@@ -1,0 +1,44 @@
+=== Dashboard Log Started at 2026-03-04 17:18:16 ===
+[2026-03-04 17:18:17] [SUCCESS] Dashboard started
+[2026-03-04 17:18:20] [INFO] Refreshing device list...
+[2026-03-04 17:18:21] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-04 17:18:21] [SUCCESS] Found 6 device(s), 1 online
+[2026-03-04 17:18:24] [INFO] Starting code update on 1 online device(s)...
+[2026-03-04 17:18:25] [SUCCESS] Code update completed on 1 device(s), 0 file(s) updated
+[2026-03-04 17:18:30] [WARNING] No devices are currently online
+[2026-03-04 17:18:32] [INFO] Starting velocity control on 1 online device(s)
+[2026-03-04 17:18:32] [INFO] Velocity control ready - ensure velocity_control.py listener is running
+[2026-03-04 17:18:33] [INFO] Starting velocity listener on 1 online device(s)...
+[2026-03-04 17:18:33] [INFO] Starting velocity listener on lightsoff-j10...
+[2026-03-04 17:18:43] [WARNING] Listener started on lightsoff-j10 but verification timed out - should still work
+[2026-03-04 17:19:30] [INFO] Starting velocity control on 1 online device(s)
+[2026-03-04 17:19:30] [INFO] Velocity control ready - ensure velocity_control.py listener is running
+[2026-03-04 17:19:37] [INFO] Sending velocity command to 1 online device(s): -100 RPM
+[2026-03-04 17:19:37] [WARNING] Connection refused on lightsoff-j10, retrying...
+[2026-03-04 17:19:38] [ERROR] Failed to connect to lightsoff-j10: Listener not running on port 5002
+[2026-03-04 17:19:38] [WARNING] No commands succeeded - check if velocity listener is running (Pressure → Start velocity listener)
+[2026-03-04 17:19:41] [INFO] Sending velocity command to 1 online device(s): -100 RPM
+[2026-03-04 17:19:41] [WARNING] Connection refused on lightsoff-j10, retrying...
+[2026-03-04 17:19:42] [ERROR] Failed to connect to lightsoff-j10: Listener not running on port 5002
+[2026-03-04 17:19:42] [WARNING] No commands succeeded - check if velocity listener is running (Pressure → Start velocity listener)
+[2026-03-04 17:19:43] [INFO] Sending velocity command to 1 online device(s): -100 RPM
+[2026-03-04 17:19:43] [WARNING] Connection refused on lightsoff-j10, retrying...
+[2026-03-04 17:19:43] [ERROR] Failed to connect to lightsoff-j10: Listener not running on port 5002
+[2026-03-04 17:19:44] [WARNING] No commands succeeded - check if velocity listener is running (Pressure → Start velocity listener)
+[2026-03-04 17:19:44] [INFO] Starting velocity listener on 1 online device(s)...
+[2026-03-04 17:19:44] [INFO] Starting velocity listener on lightsoff-j10...
+[2026-03-04 17:19:55] [WARNING] Listener started on lightsoff-j10 but verification timed out - should still work
+[2026-03-04 17:20:07] [INFO] Starting velocity listener on 1 online device(s)...
+[2026-03-04 17:20:07] [INFO] Starting velocity listener on lightsoff-j10...
+[2026-03-04 17:20:17] [WARNING] Listener started on lightsoff-j10 but verification timed out - should still work
+[2026-03-04 17:20:19] [INFO] Starting velocity control on 1 online device(s)
+[2026-03-04 17:20:19] [INFO] Velocity control ready - ensure velocity_control.py listener is running
+[2026-03-04 17:20:23] [INFO] Sending velocity command to 1 online device(s): -500 RPM
+[2026-03-04 17:20:23] [SUCCESS] Velocity set on lightsoff-j10: -500 RPM
+[2026-03-04 17:20:29] [INFO] Sending velocity command to 1 online device(s): -500000000 RPM
+[2026-03-04 17:20:29] [SUCCESS] Velocity set on lightsoff-j10: -500000000 RPM
+[2026-03-04 17:20:50] [WARNING] Sending STOP command to 1 online device(s)
+[2026-03-04 17:20:50] [SUCCESS] Motor stopped on lightsoff-j10
+[2026-03-04 17:20:51] [INFO] Shutting down...
+[2026-03-04 17:20:53] [SUCCESS] UDP server closed
+=== Dashboard Log Ended at 2026-03-04 17:20:53 ===

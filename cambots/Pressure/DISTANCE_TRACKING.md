@@ -6,8 +6,10 @@ The velocity control interface now includes real-time distance tracking that cal
 ## Motor Specifications
 From `nanotecMotorSpecs.md`:
 - **Motor:** Nanotec PD2-C4118L1804-E-01 (NEMA17 stepper)
+- **Maximum Velocity:** 100 RPM (motor shaft)
 - **Gearbox:** GPLE40-3S-80 (80:1 ratio)
 - **Lead Screw:** TR20x4 (4mm per revolution)
+- **Encoder:** Magnetic absolute, 1024 counts/rev
 
 ## Distance Calculation
 
@@ -19,17 +21,19 @@ Linear Speed (mm/min) = Motor RPM / 80 × 4 mm/rev
 Distance (mm) = Linear Speed × Time (minutes)
 ```
 
+**Important:** Distance is calculated using the **actual measured velocity** from the motor encoder (not the commanded velocity), ensuring accurate tracking even if the motor doesn't perfectly follow the commanded speed.
+
 ### Example Calculations
 
-**Example 1: 300 RPM for 60 seconds**
-- Linear speed = 300 × 0.05 = 15 mm/min
+**Example 1: 100 RPM for 60 seconds**
+- Linear speed = 100 × 0.05 = 5 mm/min
 - Time = 60 seconds = 1 minute
-- Distance = 15 × 1 = **15 mm**
+- Distance = 5 × 1 = **5 mm**
 
-**Example 2: -500 RPM for 30 seconds**
-- Linear speed = -500 × 0.05 = -25 mm/min
+**Example 2: -100 RPM for 30 seconds**
+- Linear speed = -100 × 0.05 = -5 mm/min
 - Time = 30 seconds = 0.5 minutes
-- Distance = -25 × 0.5 = **-12.5 mm**
+- Distance = -5 × 0.5 = **-2.5 mm**
 
 ## Direction Convention
 
@@ -44,20 +48,29 @@ The distance accumulator tracks the total net displacement:
 
 ### Display Components
 The velocity control form now shows:
-1. **Current Velocity** (RPM) with direction indicator
-2. **Distance Traveled** (mm) - continuously updated
-3. Three buttons:
+1. **Commanded Velocity** (RPM) - The target velocity you set
+2. **Actual Velocity** (RPM) - Real-time feedback from motor encoder
+3. **Velocity Tracking Status** - Visual indicator of how well motor tracks commanded velocity:
+   - **✓** (Green) - Excellent tracking (within ±10 RPM)
+   - **~** (Yellow) - Acceptable tracking (within ±50 RPM)
+   - **!** (Red) - Poor tracking (>50 RPM difference)
+4. **Distance Traveled** (mm) - continuously updated
+5. Three buttons:
    - **Send Velocity** - Apply the entered RPM value
    - **Stop Motor** - Immediately stop (velocity = 0)
    - **Reset Distance** - Clear the distance counter to 0.00 mm
 
 ### Real-time Updates
 The display updates **every second** while the motor is running, showing:
-- Current velocity in RPM
+- Commanded velocity in RPM (what you requested)
+- Actual velocity in RPM (what motor encoder reports)
 - Direction: ENGAGE (↓), DISENGAGE (↑), or STOPPED
 - Accumulated distance with 2 decimal precision (e.g., "12.34 mm")
+- Tracking quality indicator
 
 ### Status Colors
+- **Cyan (Commanded)** - Target velocity
+- **Purple (Actual)** - Measured velocity from encoder
 - **Red (ENGAGE)** - Negative velocity, moving down
 - **Green (DISENGAGE)** - Positive velocity, moving up
 - **Gray (STOPPED)** - Zero velocity
@@ -96,10 +109,20 @@ The display updates **every second** while the motor is running, showing:
 
 ## Technical Implementation
 
+### Velocity Feedback System
+The system reads actual velocity from the motor encoder via CANopen object dictionary:
+- **Object 0x6043** - Velocity demand value (internal motor setpoint)
+- Falls back to 0x6043 if 0x606C (actual velocity) is not supported
+- Polled every second during motor operation
+- Compared against commanded velocity (Object 0x60FF)
+
+**Note:** The motor firmware uses object 0x6043 (velocity demand) for feedback instead of 0x606C (velocity actual). This provides the internal setpoint the motor controller is trying to achieve.
+
 ### Distance Tracking Logic
 The `VelocityControl` widget maintains:
-- `current_velocity`: Current motor RPM
-- `distance_traveled`: Accumulated distance in mm
+- `current_velocity`: Commanded motor RPM (target)
+- `actual_velocity`: Measured motor RPM (from 0x6043)
+- `distance_traveled`: Accumulated distance in mm (calculated from **actual_velocity**)
 - `start_time`: Timestamp when velocity was last set
 - `update_timer`: 1-second interval timer for display updates
 
@@ -108,16 +131,20 @@ The `VelocityControl` widget maintains:
    - Calculate distance traveled at old velocity
    - Add to accumulated distance
    - Reset timer with new velocity
+   - Start background thread to fetch actual velocity
 
 2. **Every second (while running)**:
+   - Query motor for actual velocity (0x606C)
    - Calculate elapsed time since velocity was set
    - Compute current distance = old accumulated + new distance
-   - Update display
+   - Update display with commanded vs actual velocity
+   - Show tracking quality indicator
 
 3. **On stop**:
    - Accumulate final distance
    - Stop the update timer
    - Keep accumulated distance for reference
+   - Clear actual velocity reading
 
 ### Thread Safety
 - Display updates use `call_from_thread()` for safe UI updates

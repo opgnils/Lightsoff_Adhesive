@@ -25,7 +25,9 @@ def now_ms() -> int:
 OD_CONTROLWORD = Nanolib.OdIndex(0x6040, 0x00)
 OD_STATUSWORD  = Nanolib.OdIndex(0x6041, 0x00)
 OD_MODE        = Nanolib.OdIndex(0x6060, 0x00)
+OD_VEL_DEMAND  = Nanolib.OdIndex(0x6043, 0x00)  # Velocity demand value
 OD_TARGET_VEL  = Nanolib.OdIndex(0x60FF, 0x00)
+OD_ACTUAL_VEL  = Nanolib.OdIndex(0x606C, 0x00)  # Velocity actual value
 OD_ERROR_REG   = Nanolib.OdIndex(0x1001, 0x00)
 
 def w(accessor: Nanolib.NanoLibAccessor, dev: Nanolib.DeviceHandle,
@@ -35,11 +37,17 @@ def w(accessor: Nanolib.NanoLibAccessor, dev: Nanolib.DeviceHandle,
         raise RuntimeError(f"writeNumber({od.toString()}={value}) failed: {r.getError()}")
 
 def rnum(accessor: Nanolib.NanoLibAccessor, dev: Nanolib.DeviceHandle,
-         od: Nanolib.OdIndex) -> int:
+         od: Nanolib.OdIndex, signed: bool = False) -> int:
     r = accessor.readNumber(dev, od)
     if r.hasError():
         raise RuntimeError(f"readNumber({od.toString()}) failed: {r.getError()}")
-    return int(r.getResult())
+    value = int(r.getResult())
+    
+    # Convert unsigned 32-bit to signed 32-bit if requested
+    if signed and value >= 0x80000000:
+        value = value - 0x100000000
+    
+    return value
 
 def wait_status(accessor: Nanolib.NanoLibAccessor, dev: Nanolib.DeviceHandle,
                 masked_expected: int, timeout_ms: int = TIMEOUT_MS) -> int:
@@ -166,6 +174,38 @@ def set_velocity(accessor, dev_handle, velocity: int):
     w(accessor, dev_handle, OD_TARGET_VEL, int(velocity), 32)
     print(f"Velocity set to: {velocity} RPM")
 
+def get_actual_velocity(accessor, dev_handle) -> int:
+    """Get actual motor velocity from encoder feedback.
+    
+    Note: 0x606C (actual velocity) may not work on all motor firmware versions.
+    If it returns 0, we fallback to 0x6043 (velocity demand value) which shows
+    the internal setpoint the motor is trying to achieve.
+    """
+    try:
+        # First try actual velocity (0x606C) - encoder-based feedback
+        actual_vel = rnum(accessor, dev_handle, OD_ACTUAL_VEL, signed=True)
+        print(f"[DEBUG] Read 0x606C (actual velocity): {actual_vel} RPM")
+        
+        # Also read velocity demand (0x6043) - internal target
+        vel_demand = rnum(accessor, dev_handle, OD_VEL_DEMAND, signed=True)
+        print(f"[DEBUG] Read 0x6043 (velocity demand): {vel_demand} RPM")
+        
+        # Read back commanded target for verification
+        target_vel = rnum(accessor, dev_handle, OD_TARGET_VEL, signed=True)
+        print(f"[DEBUG] Read 0x60FF (target velocity): {target_vel} RPM")
+        
+        # If actual velocity is 0 but demand is non-zero, use demand instead
+        # This means the motor firmware doesn't support 0x606C readback
+        if actual_vel == 0 and vel_demand != 0:
+            print(f"[INFO] Using velocity demand instead of actual (0x606C not supported)")
+            return vel_demand
+        
+        return actual_vel
+        
+    except Exception as e:
+        print(f"[ERROR] Failed to read velocity: {e}")
+        return 0
+
 def cleanup_motor(accessor, dev_handle, bus_hw_id):
     """Cleanup motor connection."""
     try:
@@ -226,6 +266,19 @@ def start_listener():
                         client_socket.sendall(b"OK:STOPPING\n")
                         client_socket.close()
                         break
+                    
+                    # Check for get velocity command
+                    if data.upper() == "GET_VELOCITY":
+                        try:
+                            actual_vel = get_actual_velocity(accessor, dev_handle)
+                            client_socket.sendall(f"ACTUAL:{actual_vel}\n".encode('utf-8'))
+                            print(f"Sent actual velocity: {actual_vel} RPM")
+                        except Exception as e:
+                            error_msg = f"ERROR:Failed to read velocity: {e}"
+                            print(error_msg)
+                            client_socket.sendall(f"{error_msg}\n".encode('utf-8'))
+                        client_socket.close()
+                        continue
                     
                     # Parse velocity value
                     try:

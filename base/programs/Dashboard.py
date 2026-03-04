@@ -409,7 +409,8 @@ class VelocityControl(Container):
     def __init__(self, devices: list = None) -> None:
         super().__init__(id="velocity-control-form")
         self._devices = devices or []
-        self.current_velocity = 0  # Current motor velocity in RPM
+        self.current_velocity = 0  # Current commanded velocity in RPM
+        self.actual_velocity = 0  # Actual motor velocity from encoder
         self.distance_traveled = 0.0  # Accumulated distance in mm
         self.start_time = None  # Time when velocity was last set
         self.update_timer = None  # Timer for updating display
@@ -471,14 +472,57 @@ class VelocityControl(Container):
         # Linear speed = (Motor RPM / 80) * 4 mm/rev = Motor RPM * 0.05 mm/rev
         # Distance = Linear speed * time (in minutes)
         
-        if self.current_velocity != 0:
-            linear_speed_mm_per_min = self.current_velocity * 0.05  # mm/min
+        # Use actual measured velocity for accurate distance tracking
+        velocity_to_use = self.actual_velocity if self.actual_velocity != 0 else self.current_velocity
+        
+        if velocity_to_use != 0:
+            linear_speed_mm_per_min = velocity_to_use * 0.05  # mm/min
             distance_mm = linear_speed_mm_per_min * (elapsed_time / 60.0)
             self.distance_traveled += distance_mm
+    
+    def _fetch_actual_velocity(self) -> None:
+        """Fetch actual velocity from motor (runs in background thread)."""
+        import socket
+        
+        if not self._devices:
+            return
+        
+        # Only query the first online device
+        for d in self._devices:
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(1.0)
+                
+                host = d.get("HostName")
+                sock.connect((host, 5002))
+                sock.sendall(b"GET_VELOCITY\n")
+                
+                response = sock.recv(1024).decode('utf-8').strip()
+                sock.close()
+                
+                # Parse response: "ACTUAL:123"
+                if response.startswith("ACTUAL:"):
+                    try:
+                        actual_vel = int(response.split(":")[1])
+                        self.actual_velocity = actual_vel
+                    except (ValueError, IndexError):
+                        pass
+                
+                break  # Only query first device
+                
+            except Exception:
+                # Silently ignore errors (motor might not be running)
+                pass
     
     def _update_display(self) -> None:
         """Update the status display with current velocity and distance."""
         import time
+        import threading
+        
+        # Fetch actual velocity in background thread (non-blocking)
+        if self.current_velocity != 0 or self.actual_velocity != 0:
+            thread = threading.Thread(target=self._fetch_actual_velocity, daemon=True)
+            thread.start()
         
         try:
             status_widget = self.query_one("#velocity-status", Static)
@@ -487,21 +531,35 @@ class VelocityControl(Container):
             current_distance = self.distance_traveled
             if self.start_time is not None and self.current_velocity != 0:
                 elapsed_time = time.time() - self.start_time
-                linear_speed_mm_per_min = self.current_velocity * 0.05
+                # Use actual velocity for accurate real-time distance, fallback to commanded if not available
+                velocity_for_display = self.actual_velocity if self.actual_velocity != 0 else self.current_velocity
+                linear_speed_mm_per_min = velocity_for_display * 0.05
                 current_distance += linear_speed_mm_per_min * (elapsed_time / 60.0)
             
-            # Determine direction
+            # Determine direction based on commanded velocity
             if self.current_velocity < 0:
-                direction = "[#ff5555]ENGAGE (↓)[/#ff5555]"
+                direction = "[#ff5555]ENGAGE (↑)[/#ff5555]"
             elif self.current_velocity > 0:
-                direction = "[#50fa7b]DISENGAGE (↑)[/#50fa7b]"
+                direction = "[#50fa7b]DISENGAGE (↓)[/#50fa7b]"
             else:
                 direction = "[#6272a4]STOPPED[/#6272a4]"
             
-            # Format display
+            # Calculate velocity difference for feedback
+            vel_diff = abs(self.actual_velocity - self.current_velocity)
+            vel_status = ""
+            if self.current_velocity != 0:
+                if vel_diff < 10:
+                    vel_status = "[#50fa7b]✓[/#50fa7b]"  # Good tracking
+                elif vel_diff < 50:
+                    vel_status = "[#f1fa8c]~[/#f1fa8c]"  # Acceptable
+                else:
+                    vel_status = "[#ff5555]![/#ff5555]"  # Poor tracking
+            
+            # Format display with both commanded and actual velocity
             status_text = (
                 f"\n[b]Current Status:[/b]\n"
-                f"  • Velocity: [#8be9fd]{self.current_velocity} RPM[/#8be9fd] {direction}\n"
+                f"  • Commanded: [#8be9fd]{self.current_velocity} RPM[/#8be9fd] {direction}\n"
+                f"  • Actual: [#bd93f9]{self.actual_velocity} RPM[/#bd93f9] {vel_status}\n"
                 f"  • Distance traveled: [#f1fa8c]{current_distance:.2f} mm[/#f1fa8c]\n"
             )
             
