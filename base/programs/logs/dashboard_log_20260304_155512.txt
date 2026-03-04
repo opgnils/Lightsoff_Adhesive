@@ -1,0 +1,31 @@
+=== Dashboard Log Started at 2026-03-04 15:55:12 ===
+[2026-03-04 15:55:12] [SUCCESS] Dashboard started
+[2026-03-04 15:55:14] [INFO] Refreshing device list...
+[2026-03-04 15:55:15] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-04 15:55:15] [SUCCESS] Found 6 device(s), 1 online
+[2026-03-04 15:55:52] [INFO] Starting adhesive manual control on 1 online device(s)
+[2026-03-04 15:55:52] [INFO] Manual control ready - ensure listeners are running from Listeners menu
+[2026-03-04 15:55:54] [INFO] Sending motor command to 1 online device(s): 1000,0,0
+[2026-03-04 15:55:54] [SUCCESS] Command sent to lightsoff-j10: 1000,0,0
+[2026-03-04 15:55:58] [INFO] Sending motor command to 1 online device(s): 1000,200,0
+[2026-03-04 15:55:58] [SUCCESS] Command sent to lightsoff-j10: 1000,200,0
+[2026-03-04 15:56:02] [INFO] Sending motor command to 1 online device(s): 6000,200,0
+[2026-03-04 15:56:03] [SUCCESS] Command sent to lightsoff-j10: 6000,200,0
+[2026-03-04 15:56:06] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-04 15:56:06] [SUCCESS] Motors stopped on lightsoff-j10
+[2026-03-04 15:56:11] [WARNING] No devices are currently online
+[2026-03-04 15:56:24] [INFO] Killing Python processes on 1 online device(s)...
+[2026-03-04 15:56:27] [SUCCESS] Cleanup completed on 1 device(s)
+[2026-03-04 15:56:28] [INFO] Starting unified listeners on 1 online device(s)...
+[2026-03-04 15:56:39] [ERROR] Failed to start listener on lightsoff-j10
+[2026-03-04 15:56:41] [INFO] Starting unified listeners on 1 online device(s)...
+[2026-03-04 15:56:42] [SUCCESS] UnifiedListener running on lightsoff-j10
+[2026-03-04 15:56:47] [INFO] Starting adhesive manual control on 1 online device(s)
+[2026-03-04 15:56:47] [INFO] Manual control ready - ensure listeners are running from Listeners menu
+[2026-03-04 15:56:49] [INFO] Sending motor command to 1 online device(s): 5000,0,0
+[2026-03-04 15:56:49] [SUCCESS] Command sent to lightsoff-j10: 5000,0,0
+[2026-03-04 15:56:51] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-04 15:56:51] [SUCCESS] Motors stopped on lightsoff-j10
+[2026-03-04 15:56:55] [INFO] Shutting down...
+[2026-03-04 15:56:57] [SUCCESS] UDP server closed
+=== Dashboard Log Ended at 2026-03-04 15:56:57 ===

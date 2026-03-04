@@ -1,0 +1,45 @@
+=== Dashboard Log Started at 2026-03-04 15:36:48 ===
+[2026-03-04 15:36:48] [SUCCESS] Dashboard started
+[2026-03-04 15:36:53] [INFO] Refreshing device list...
+[2026-03-04 15:36:54] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-04 15:36:54] [SUCCESS] Found 6 device(s), 1 online
+[2026-03-04 15:36:57] [INFO] Starting adhesive manual control on 1 online device(s)
+[2026-03-04 15:36:57] [INFO] Manual control ready - ensure listeners are running from Listeners menu
+[2026-03-04 15:36:59] [INFO] Sending motor command to 1 online device(s): 2000,0,0
+[2026-03-04 15:36:59] [SUCCESS] Command sent to lightsoff-j10: 2000,0,0
+[2026-03-04 15:37:03] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-04 15:37:03] [SUCCESS] Motors stopped on lightsoff-j10
+[2026-03-04 15:37:06] [INFO] Restarting unified listeners on 1 online device(s)...
+[2026-03-04 15:37:36] [ERROR] Failed to restart listener on lightsoff-j10
+[2026-03-04 15:37:40] [INFO] Starting code update on 1 online device(s)...
+[2026-03-04 15:37:44] [SUCCESS] Code update completed on 1 device(s), 25 file(s) updated
+[2026-03-04 15:37:47] [INFO] Killing Python processes on 1 online device(s)...
+[2026-03-04 15:37:48] [SUCCESS] Cleanup completed on 1 device(s)
+[2026-03-04 15:37:49] [INFO] Starting unified listeners on 1 online device(s)...
+[2026-03-04 15:38:00] [ERROR] Failed to start listener on lightsoff-j10
+[2026-03-04 15:38:01] [INFO] Starting unified listeners on 1 online device(s)...
+[2026-03-04 15:38:02] [SUCCESS] UnifiedListener running on lightsoff-j10
+[2026-03-04 15:38:05] [INFO] Starting adhesive manual control on 1 online device(s)
+[2026-03-04 15:38:05] [INFO] Manual control ready - ensure listeners are running from Listeners menu
+[2026-03-04 15:38:09] [INFO] Sending motor command to 1 online device(s): 1000,200,0
+[2026-03-04 15:38:10] [SUCCESS] Command sent to lightsoff-j10: 1000,200,0
+[2026-03-04 15:38:13] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-04 15:38:14] [SUCCESS] Motors stopped on lightsoff-j10
+[2026-03-04 15:38:15] [ERROR] ADHESIVE EMERGENCY STOP activated
+[2026-03-04 15:38:16] [SUCCESS] Emergency stop sent to lightsoff-j10
+[2026-03-04 15:38:17] [INFO] Starting Combined Aruco + Holes tracking on 1 device(s)...
+[2026-03-04 15:38:17] [INFO] Launching tracking on lightsoff-j10...
+[2026-03-04 15:38:19] [SUCCESS] Tracking started successfully on all devices
+[2026-03-04 15:38:20] [INFO] Starting unified listeners on 1 online device(s)...
+[2026-03-04 15:38:21] [SUCCESS] UnifiedListener running on lightsoff-j10
+[2026-03-04 15:38:24] [INFO] Starting adhesive manual control on 1 online device(s)
+[2026-03-04 15:38:24] [INFO] Manual control ready - ensure listeners are running from Listeners menu
+[2026-03-04 15:38:27] [INFO] Sending motor command to 1 online device(s): 2000,0,0
+[2026-03-04 15:38:27] [SUCCESS] Command sent to lightsoff-j10: 2000,0,0
+[2026-03-04 15:38:32] [INFO] Sending motor command to 1 online device(s): 2000,500,0
+[2026-03-04 15:38:32] [SUCCESS] Command sent to lightsoff-j10: 2000,500,0
+[2026-03-04 15:38:33] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-04 15:38:33] [SUCCESS] Motors stopped on lightsoff-j10
+[2026-03-04 15:38:34] [INFO] Shutting down...
+[2026-03-04 15:38:36] [SUCCESS] UDP server closed
+=== Dashboard Log Ended at 2026-03-04 15:38:36 ===

@@ -1,0 +1,19 @@
+=== Dashboard Log Started at 2026-03-04 15:34:46 ===
+[2026-03-04 15:34:46] [SUCCESS] Dashboard started
+[2026-03-04 15:35:03] [WARNING] No devices selected
+[2026-03-04 15:35:05] [INFO] Refreshing device list...
+[2026-03-04 15:35:06] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-04 15:35:06] [SUCCESS] Found 6 device(s), 1 online
+[2026-03-04 15:35:06] [INFO] Starting adhesive manual control on 1 online device(s)
+[2026-03-04 15:35:06] [INFO] Manual control ready - ensure listeners are running from Listeners menu
+[2026-03-04 15:35:09] [INFO] Sending motor command to 1 online device(s): 2000,0,0
+[2026-03-04 15:35:09] [SUCCESS] Command sent to lightsoff-j10: 2000,0,0
+[2026-03-04 15:35:14] [INFO] Sending motor command to 1 online device(s): 2000,1000,-1000
+[2026-03-04 15:35:14] [SUCCESS] Command sent to lightsoff-j10: 2000,1000,-1000
+[2026-03-04 15:35:18] [INFO] Sending motor command to 1 online device(s): 6000,1000,-1000
+[2026-03-04 15:35:18] [SUCCESS] Command sent to lightsoff-j10: 6000,1000,-1000
+[2026-03-04 15:35:20] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-04 15:35:20] [SUCCESS] Motors stopped on lightsoff-j10
+[2026-03-04 15:35:23] [INFO] Shutting down...
+[2026-03-04 15:35:25] [SUCCESS] UDP server closed
+=== Dashboard Log Ended at 2026-03-04 15:35:25 ===
