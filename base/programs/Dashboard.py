@@ -801,8 +801,9 @@ class LightsOffDashboard(App):
             "  • Connect to remote robots\n"
             "  • Configure components for tracking\n"
             "  • Run combined tracking operations\n"
-            "  • Control assembly robots (engage/disengage clamps)\n"
-            "  • Control adhesive robots\n"
+            "  • Start/stop unified listeners (adhesive + pressure motors)\n"
+            "  • Control assembly (engage/disengage clamps)\n"
+            "  • Control adhesive motors (manual + profiles)\n"
             "  • Position and control crane\n\n"
             "[dim]Press [b]R[/b] to refresh devices | Press [b]Q[/b] to quit[/dim]"
         )
@@ -849,19 +850,21 @@ class LightsOffDashboard(App):
             ("tracking", "3  Tracking", [
                 "Combined tracking"
             ]),
-            ("assembly", "4  Assembly Robot", [
+            ("listeners", "4  Listeners", [
+                "Start listeners",
+                "Check listener logs",
+                "Kill listeners"
+            ]),
+            ("assembly", "5  Assembly", [
                 "Engage clamps",
                 "Disengage clamps"
             ]),
-            ("adhesive", "5  Adhesive Robot", [
-                "Start listeners",
-                "Check listener logs",
+            ("adhesive", "6  Adhesive", [
                 "Manual control",
                 "Run profile",
-                "Kill listeners",
                 "Emergency stop"
             ]),
-            ("crane", "6  Crane", [
+            ("crane", "7  Crane", [
                 "Position crane",
                 "Home position",
                 "Emergency stop"
@@ -1003,25 +1006,28 @@ class LightsOffDashboard(App):
             if action == "Combined tracking":
                 await self._do_tracking("combined")
 
-        # ── Assembly Robot actions ──
+        # ── Listeners actions ──
+        elif section == "listeners":
+            if action == "Start listeners":
+                await self._do_start_listeners()
+            elif action == "Check listener logs":
+                await self._do_check_listener_logs()
+            elif action == "Kill listeners":
+                await self._do_kill_listeners()
+
+        # ── Assembly actions ──
         elif section == "assembly":
             if action == "Engage clamps":
                 await self._do_motor_action(engage=True)
             elif action == "Disengage clamps":
                 await self._do_motor_action(engage=False)
 
-        # ── Adhesive Robot actions ──
+        # ── Adhesive actions ──
         elif section == "adhesive":
-            if action == "Start listeners":
-                await self._do_start_listeners()
-            elif action == "Check listener logs":
-                await self._do_check_listener_logs()
-            elif action == "Manual control":
+            if action == "Manual control":
                 await self._do_adhesive_manual()
             elif action == "Run profile":
                 await self._do_adhesive_profile()
-            elif action == "Kill listeners":
-                await self._do_kill_listeners()
             elif action == "Emergency stop":
                 await self._do_adhesive_emergency_stop()
 
@@ -1574,7 +1580,7 @@ class LightsOffDashboard(App):
         )
 
     async def _do_start_listeners(self) -> None:
-        """Start adhesive listeners on selected devices."""
+        """Start unified listeners on selected devices."""
         devices = self.appstate.get("selected_devices", [])
         
         if not devices:
@@ -1603,11 +1609,13 @@ class LightsOffDashboard(App):
         if offline_count > 0:
             self._log(f"Warning: {offline_count} device(s) are offline and will be skipped", "warning")
         
-        self._log(f"Starting adhesive listeners on {len(online_devices)} online device(s)...", "info")
+        self._log(f"Starting unified listeners on {len(online_devices)} online device(s)...", "info")
         self._set_operation(
             "Start Listeners",
             f"[b]Starting listeners on {len(online_devices)} device(s)...[/b]\n\n"
-            "[dim]Checking for existing listeners and starting new ones if needed.\n\n"
+            "[dim]The UnifiedListener handles:\n"
+            "  • Adhesive motors (port 5001)\n"
+            "  • Pressure motor (port 5002)\n\n"
             "Please wait...[/dim]"
         )
         
@@ -1618,8 +1626,8 @@ class LightsOffDashboard(App):
                 try:
                     success = ensure_adhesive_listener_running(d)
                     if success:
-                        results.append(f"[#50fa7b]✓[/#50fa7b] {d['Host']}: Listener running")
-                        self.call_from_thread(self._log, f"Adhesive listener running on {d['Host']}", "success")
+                        results.append(f"[#50fa7b]✓[/#50fa7b] {d['Host']}: UnifiedListener running")
+                        self.call_from_thread(self._log, f"UnifiedListener running on {d['Host']}", "success")
                     else:
                         results.append(f"[#ff5555]✗[/#ff5555] {d['Host']}: Failed to start")
                         self.call_from_thread(self._log, f"Failed to start listener on {d['Host']}", "error")
@@ -1634,7 +1642,8 @@ class LightsOffDashboard(App):
                 f"[b]Listener Status:[/b]\n\n"
                 f"{results_text}\n\n"
                 f"Devices processed: {len(online_devices)}/{len(devices)}\n\n"
-                "[dim]Listeners are now ready for manual control or profile execution.[/dim]"
+                "[dim]UnifiedListener handles both adhesive and pressure motors.\n"
+                "Listeners are now ready for manual control or profile execution.[/dim]"
             )
         
         thread = threading.Thread(target=start_listeners, daemon=True)
@@ -1670,7 +1679,7 @@ class LightsOffDashboard(App):
         self._set_operation(
             "Check Listener Logs",
             f"[b]Fetching logs from {len(online_devices)} device(s)...[/b]\n\n"
-            "[dim]Retrieving last 30 lines from adhesive_listener.log\n\n"
+            "[dim]Retrieving last 30 lines from unified_listener.log\n\n"
             "Please wait...[/dim]"
         )
         
@@ -1683,7 +1692,7 @@ class LightsOffDashboard(App):
                     user = d["User"]
                     
                     # Get last 30 lines of the log file
-                    log_cmd = "tail -30 ~/Documents/LightsOff_Project/adhesive_listener.log 2>&1 || echo 'Log file not found'"
+                    log_cmd = "tail -30 ~/Documents/LightsOff_Project/unified_listener.log 2>&1 || echo 'Log file not found'"
                     
                     ssh_cmd = [
                         "sshpass", "-p", "lightsoff", "ssh",
@@ -1713,10 +1722,11 @@ class LightsOffDashboard(App):
             # Show all logs
             logs_text = "\n".join(all_logs) if all_logs else "[dim]No logs available[/dim]"
             self.call_from_thread(self._set_operation,
-                "Listener Logs",
-                f"[b]Adhesive Listener Logs (last 30 lines)[/b]\n\n"
+                "Unified Listener Logs",
+                f"[b]Unified Listener Logs (last 30 lines)[/b]\n\n"
                 f"{logs_text}\n"
-                f"[dim]Showing logs from {len(online_devices)} device(s)[/dim]"
+                f"[dim]Showing logs from {len(online_devices)} device(s)\n"
+                "Unified listener handles both adhesive (port 5001) and pressure (port 5002) motors.[/dim]"
             )
         
         thread = threading.Thread(target=fetch_logs, daemon=True)
@@ -1757,24 +1767,38 @@ class LightsOffDashboard(App):
         # Clear emergency stop flag when entering manual control
         self._emergency_stop_flag = False
         
-        # Show initial message about listener startup
-        self._log(f"Ensuring adhesive listeners are running on {len(online_devices)} device(s)...", "info")
+        # Check if UnifiedListener is already running (don't restart it!)
+        self._log(f"Checking UnifiedListener status on {len(online_devices)} device(s)...", "info")
         
-        # Ensure listeners are running in background on online devices only
-        def ensure_listeners():
+        # Verify listeners in background on online devices only
+        def verify_listeners():
             ready_count = 0
             for d in online_devices:
                 try:
-                    self.call_from_thread(self._log, f"Starting listener on {d['Host']}...", "info")
-                    success = ensure_adhesive_listener_running(d)
+                    host = d["HostName"]
+                    user = d["User"]
                     
-                    if success:
+                    # Check if port 5001 (adhesive) is listening - do NOT kill/restart
+                    check_cmd = "lsof -i :5001 -sTCP:LISTEN 2>/dev/null | grep -q python && echo 'LISTENING' || echo 'NOT_LISTENING'"
+                    ssh_cmd = [
+                        "sshpass", "-p", "lightsoff", "ssh",
+                        "-o", "StrictHostKeyChecking=no",
+                        "-o", "ConnectTimeout=5",
+                        f"{user}@{host}",
+                        check_cmd
+                    ]
+                    
+                    result = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=10)
+                    
+                    if result.returncode == 0 and "LISTENING" in result.stdout:
                         ready_count += 1
                         self.call_from_thread(self._log, f"✓ Listener ready on {d['Host']}", "success")
                     else:
-                        self.call_from_thread(self._log, f"⚠ Listener verification inconclusive on {d['Host']}", "warning")
+                        self.call_from_thread(self._log, 
+                            f"⚠ Listener NOT running on {d['Host']} - please start it from Listeners menu first", 
+                            "warning")
                 except Exception as e:
-                    self.call_from_thread(self._log, f"✗ Failed to start listener on {d['Host']}: {e}", "error")
+                    self.call_from_thread(self._log, f"✗ Failed to check listener on {d['Host']}: {e}", "error")
             
             # Summary message
             if ready_count == len(online_devices):
@@ -1782,9 +1806,11 @@ class LightsOffDashboard(App):
             elif ready_count > 0:
                 self.call_from_thread(self._log, f"{ready_count}/{len(online_devices)} listener(s) ready - some devices may not respond", "warning")
             else:
-                self.call_from_thread(self._log, f"No listeners ready - commands will likely fail", "error")
+                self.call_from_thread(self._log, 
+                    f"⚠ No listeners ready - please start listeners from menu first!", 
+                    "error")
         
-        thread = threading.Thread(target=ensure_listeners, daemon=True)
+        thread = threading.Thread(target=verify_listeners, daemon=True)
         thread.start()
         
         # Show the interactive manual control form (pass online_devices)
@@ -2299,7 +2325,7 @@ class LightsOffDashboard(App):
             "Kill Listeners",
             f"[b]Cleaning up processes on {len(online_devices)} device(s)...[/b]\n\n"
             "[dim]This will kill all Python processes including:\n"
-            "  • AdhesiveListener.py\n"
+            "  • UnifiedListener.py (adhesive + pressure motors)\n"
             "  • Any other running Python scripts\n\n"
             "Please wait...[/dim]"
         )
@@ -2314,10 +2340,10 @@ class LightsOffDashboard(App):
                     "Kill Listeners Complete",
                     f"[#50fa7b]✓[/#50fa7b] Successfully cleaned up processes on {len(online_devices)} online device(s).\n\n"
                     "All Python processes have been terminated:\n"
-                    "  • Adhesive listeners stopped\n"
+                    "  • UnifiedListener stopped (adhesive + pressure motors)\n"
                     "  • Other Python scripts killed\n\n"
                     f"Online devices: {len(online_devices)}/{len(devices)}\n\n"
-                    "[dim]You can now restart manual control or run profiles.[/dim]"
+                    "[dim]You can now restart the listeners or run profiles.[/dim]"
                 )
             except Exception as e:
                 self.call_from_thread(self._log, f"Cleanup failed: {e}", "error")
@@ -2334,7 +2360,7 @@ class LightsOffDashboard(App):
         thread.start()
 
     async def _do_adhesive_emergency_stop(self) -> None:
-        """Emergency stop for adhesive robot.
+        """Emergency stop for adhesive.
         
         ROBUST EMERGENCY STOP SYSTEM:
         1. Sets global _emergency_stop_flag immediately to halt any running profiles
