@@ -1,0 +1,59 @@
+=== Dashboard Log Started at 2026-03-04 10:17:48 ===
+[2026-03-04 10:17:48] [SUCCESS] Dashboard started
+[2026-03-04 10:17:50] [INFO] Refreshing device list...
+[2026-03-04 10:17:51] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-04 10:17:51] [SUCCESS] Found 6 device(s), 1 online
+[2026-03-04 10:18:08] [INFO] Found 3 adhesive profile(s)
+[2026-03-04 10:18:11] [INFO] Starting profile: fast_rampUp.csv on 1 online device(s)
+[2026-03-04 10:18:11] [INFO] Starting adhesive listeners on 1 device(s)...
+[2026-03-04 10:18:23] [SUCCESS] Listener ready on lightsoff-j10
+[2026-03-04 10:18:23] [INFO] Loading profile: fast_rampUp.csv
+[2026-03-04 10:18:23] [SUCCESS] Loaded 31 steps
+[2026-03-04 10:18:23] [SUCCESS] [1/31] t=0.0s -> 0.0,0.0,0.0 ✓
+[2026-03-04 10:18:24] [SUCCESS] [2/31] t=1.0s -> 1247.0,0.0,0.0 ✓
+[2026-03-04 10:18:25] [SUCCESS] [3/31] t=2.0s -> 3245.0,4.0,4.0 ✓
+[2026-03-04 10:18:26] [SUCCESS] [4/31] t=3.0s -> 5163.0,98.0,108.0 ✓
+[2026-03-04 10:18:27] [SUCCESS] [5/31] t=4.0s -> 5803.0,870.0,889.0 ✓
+[2026-03-04 10:18:28] [SUCCESS] [6/31] t=5.0s -> 5588.0,952.0,949.0 ✓
+[2026-03-04 10:18:29] [SUCCESS] [7/31] t=6.0s -> 5107.0,863.0,848.0 ✓
+[2026-03-04 10:18:30] [SUCCESS] [8/31] t=7.0s -> 4200.0,679.0,654.0 ✓
+[2026-03-04 10:18:31] [ERROR] ADHESIVE EMERGENCY STOP activated
+[2026-03-04 10:18:31] [SUCCESS] Emergency stop sent to lightsoff-j10
+[2026-03-04 10:18:31] [SUCCESS] [9/31] t=8.0s -> 3214.0,457.0,428.0 ✓
+[2026-03-04 10:18:31] [ERROR] Profile ABORTED at step 10/31 due to emergency stop
+[2026-03-04 10:18:35] [INFO] Found 3 adhesive profile(s)
+[2026-03-04 10:18:39] [INFO] Starting profile: adh_test_profile.csv on 1 online device(s)
+[2026-03-04 10:18:39] [INFO] Starting adhesive listeners on 1 device(s)...
+[2026-03-04 10:18:53] [SUCCESS] Listener ready on lightsoff-j10
+[2026-03-04 10:18:53] [INFO] Loading profile: adh_test_profile.csv
+[2026-03-04 10:18:53] [SUCCESS] Loaded 21 steps
+[2026-03-04 10:18:53] [SUCCESS] [1/21] t=0.0s -> 0.0,0.0,0.0 ✓
+[2026-03-04 10:18:54] [SUCCESS] [2/21] t=1.0s -> 10565.11,448.34,448.34 ✓
+[2026-03-04 10:18:55] [SUCCESS] [3/21] t=2.0s -> 23013.92,638.89,638.89 ✓
+[2026-03-04 10:18:56] [SUCCESS] [4/21] t=3.0s -> 37755.94,713.99,713.99 ✓
+[2026-03-04 10:18:57] [SUCCESS] [5/21] t=4.0s -> 54709.25,739.77,739.77 ✓
+[2026-03-04 10:18:58] [SUCCESS] [6/21] t=5.0s -> 71662.57,733.04,733.04 ✓
+[2026-03-04 10:18:59] [SUCCESS] [7/21] t=6.0s -> 85421.79,700.54,700.54 ✓
+[2026-03-04 10:19:00] [SUCCESS] [8/21] t=7.0s -> 94103.19,641.13,641.13 ✓
+[2026-03-04 10:19:01] [SUCCESS] [9/21] t=8.0s -> 98443.9,554.82,554.82 ✓
+[2026-03-04 10:19:02] [SUCCESS] [10/21] t=9.0s -> 100000.0,451.71,451.71 ✓
+[2026-03-04 10:19:03] [SUCCESS] [11/21] t=10.0s -> 99508.6,341.86,341.86 ✓
+[2026-03-04 10:19:03] [ERROR] ADHESIVE EMERGENCY STOP activated
+[2026-03-04 10:19:03] [SUCCESS] Emergency stop sent to lightsoff-j10
+[2026-03-04 10:19:04] [SUCCESS] [12/21] t=11.0s -> 96887.8,247.71,247.71 ✓
+[2026-03-04 10:19:04] [ERROR] Profile ABORTED at step 13/21 due to emergency stop
+[2026-03-04 10:19:54] [INFO] Starting adhesive manual control on 1 online device(s)
+[2026-03-04 10:19:57] [INFO] Sending motor command to 1 online device(s): 500,0,0
+[2026-03-04 10:19:57] [ERROR] Failed to send to lightsoff-j10: [Errno 111] Connection refused
+[2026-03-04 10:20:01] [INFO] Sending motor command to 1 online device(s): 5000,0,0
+[2026-03-04 10:20:01] [SUCCESS] Command sent to lightsoff-j10: 5000,0,0
+[2026-03-04 10:20:05] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-04 10:20:05] [SUCCESS] Motors stopped on lightsoff-j10
+[2026-03-04 10:20:06] [SUCCESS] Adhesive listener ready on lightsoff-j10
+[2026-03-04 10:20:07] [INFO] Sending motor command to 1 online device(s): 0,200,0
+[2026-03-04 10:20:08] [SUCCESS] Command sent to lightsoff-j10: 0,200,0
+[2026-03-04 10:20:09] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-04 10:20:09] [SUCCESS] Motors stopped on lightsoff-j10
+[2026-03-04 10:20:14] [INFO] Shutting down...
+[2026-03-04 10:20:16] [SUCCESS] UDP server closed
+=== Dashboard Log Ended at 2026-03-04 10:20:16 ===

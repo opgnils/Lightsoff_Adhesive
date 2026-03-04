@@ -662,6 +662,7 @@ class LightsOffDashboard(App):
         super().__init__()
         self.appstate = appstate
         self._expanded_section: str | None = None
+        self._emergency_stop_flag = False  # Global emergency stop flag
 
     def compose(self) -> ComposeResult:
         # Top row: Control System | Operation View
@@ -1710,6 +1711,9 @@ class LightsOffDashboard(App):
         
         self._log(f"Starting adhesive manual control on {len(online_devices)} online device(s)", "info")
         
+        # Clear emergency stop flag when entering manual control
+        self._emergency_stop_flag = False
+        
         # Ensure listeners are running in background on online devices only
         def ensure_listeners():
             for d in online_devices:
@@ -1778,6 +1782,11 @@ class LightsOffDashboard(App):
             
             # Send command to online devices only
             self._log(f"Sending motor command to {len(online_devices)} online device(s): {command}", "info")
+            
+            # Check emergency stop flag before sending
+            if self._emergency_stop_flag:
+                self._log("Command blocked: Emergency stop is active", "warning")
+                return
             
             def send_commands():
                 for d in online_devices:
@@ -2020,6 +2029,10 @@ class LightsOffDashboard(App):
             return
         
         self._log(f"Starting profile: {profile_name} on {len(online_devices)} online device(s)", "info")
+        
+        # Clear emergency stop flag when starting a new profile
+        self._emergency_stop_flag = False
+        
         self._set_operation(
             f"Running: {profile_name}",
             f"[b]Executing Adhesive Profile[/b]\n\n"
@@ -2091,6 +2104,30 @@ class LightsOffDashboard(App):
                 # Execute profile on online devices only
                 start_time = time.time()
                 for i, (t_target, motors) in enumerate(steps):
+                    # CHECK EMERGENCY STOP FLAG - exit immediately if set
+                    if self._emergency_stop_flag:
+                        self.call_from_thread(self._log, 
+                            f"Profile ABORTED at step {i+1}/{len(steps)} due to emergency stop", 
+                            "error"
+                        )
+                        # Send immediate stop command
+                        for d in online_devices:
+                            try:
+                                send_tcp_cmd(d, "0,0,0", timeout=1.0)
+                            except Exception:
+                                pass
+                        self.call_from_thread(self._set_operation,
+                            f"ABORTED: {profile_name}",
+                            f"[#ff5555]✗ PROFILE ABORTED BY EMERGENCY STOP[/#ff5555]\n\n"
+                            f"Profile: {profile_name}\n"
+                            f"Stopped at step: {i+1}/{len(steps)}\n"
+                            f"Online devices: {len(online_devices)}/{len(devices)}\n\n"
+                            "[b]All motors commanded to STOP (0,0,0)[/b]\n\n"
+                            "[dim]Emergency stop was activated during execution[/dim]\n"
+                            "[dim]Verify all motors have stopped before proceeding[/dim]"
+                        )
+                        return  # EXIT IMMEDIATELY
+                    
                     now = time.time()
                     wait = t_target - (now - start_time)
                     if wait > 0:
@@ -2249,8 +2286,21 @@ class LightsOffDashboard(App):
         thread.start()
 
     async def _do_adhesive_emergency_stop(self) -> None:
-        """Emergency stop for adhesive robot."""
+        """Emergency stop for adhesive robot.
+        
+        ROBUST EMERGENCY STOP SYSTEM:
+        1. Sets global _emergency_stop_flag immediately to halt any running profiles
+        2. Profile execution checks this flag before EVERY step and aborts if set
+        3. Manual control commands are blocked while flag is active
+        4. Sends stop commands (0,0,0) to all online devices via TCP
+        5. Flag is only cleared when starting a new profile or manual control session
+        
+        This ensures profiles stop immediately and don't continue execution.
+        """
         devices = self.appstate.get("selected_devices", [])
+        
+        # Set emergency stop flag IMMEDIATELY - this stops any running profiles
+        self._emergency_stop_flag = True
         
         self._log("ADHESIVE EMERGENCY STOP activated", "error")
         

@@ -1,0 +1,196 @@
+=== Dashboard Log Started at 2026-03-04 10:09:39 ===
+[2026-03-04 10:09:39] [SUCCESS] Dashboard started
+[2026-03-04 10:09:40] [INFO] Refreshing device list...
+[2026-03-04 10:09:41] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-04 10:09:41] [SUCCESS] Found 6 device(s), 1 online
+[2026-03-04 10:09:47] [INFO] Starting adhesive manual control on 1 online device(s)
+[2026-03-04 10:09:49] [INFO] Sending motor command to 1 online device(s): 200,0,0
+[2026-03-04 10:09:49] [ERROR] Failed to send to lightsoff-j10: [Errno 111] Connection refused
+[2026-03-04 10:09:54] [INFO] Starting adhesive listeners on 1 online device(s)...
+[2026-03-04 10:09:59] [SUCCESS] Adhesive listener ready on lightsoff-j10
+[2026-03-04 10:10:06] [ERROR] Failed to start listener on lightsoff-j10
+[2026-03-04 10:10:12] [INFO] Killing Python processes on 1 online device(s)...
+[2026-03-04 10:10:14] [SUCCESS] Cleanup completed on 1 device(s)
+[2026-03-04 10:10:18] [INFO] Starting adhesive listeners on 1 online device(s)...
+[2026-03-04 10:10:30] [ERROR] Failed to start listener on lightsoff-j10
+[2026-03-04 10:10:34] [INFO] Starting adhesive manual control on 1 online device(s)
+[2026-03-04 10:10:36] [INFO] Sending motor command to 1 online device(s): 200,0,0
+[2026-03-04 10:10:36] [ERROR] Failed to send to lightsoff-j10: [Errno 111] Connection refused
+[2026-03-04 10:10:39] [INFO] Sending motor command to 1 online device(s): 200,200,0
+[2026-03-04 10:10:39] [ERROR] Failed to send to lightsoff-j10: [Errno 111] Connection refused
+[2026-03-04 10:10:41] [INFO] Sending motor command to 1 online device(s): 200,200,200
+[2026-03-04 10:10:41] [SUCCESS] Command sent to lightsoff-j10: 200,200,200
+[2026-03-04 10:10:43] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-04 10:10:43] [SUCCESS] Motors stopped on lightsoff-j10
+[2026-03-04 10:10:46] [SUCCESS] Adhesive listener ready on lightsoff-j10
+[2026-03-04 10:10:48] [INFO] Sending motor command to 1 online device(s): 0,0,200
+[2026-03-04 10:10:48] [SUCCESS] Command sent to lightsoff-j10: 0,0,200
+[2026-03-04 10:10:49] [ERROR] Motor 2 value 2000 exceeds max ±1150 µL/s
+[2026-03-04 10:10:52] [ERROR] Motor 2 value 2000 exceeds max ±1150 µL/s
+[2026-03-04 10:10:54] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-04 10:10:54] [SUCCESS] Motors stopped on lightsoff-j10
+[2026-03-04 10:10:56] [INFO] Sending motor command to 1 online device(s): 0,200,0
+[2026-03-04 10:10:56] [SUCCESS] Command sent to lightsoff-j10: 0,200,0
+[2026-03-04 10:11:01] [INFO] Sending motor command to 1 online device(s): 1000,200,0
+[2026-03-04 10:11:01] [SUCCESS] Command sent to lightsoff-j10: 1000,200,0
+[2026-03-04 10:11:08] [INFO] Sending motor command to 1 online device(s): 2000,200,0
+[2026-03-04 10:11:08] [SUCCESS] Command sent to lightsoff-j10: 2000,200,0
+[2026-03-04 10:11:14] [INFO] Sending motor command to 1 online device(s): 2000,200,500
+[2026-03-04 10:11:14] [SUCCESS] Command sent to lightsoff-j10: 2000,200,500
+[2026-03-04 10:11:16] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-04 10:11:16] [SUCCESS] Motors stopped on lightsoff-j10
+[2026-03-04 10:11:18] [INFO] Found 3 adhesive profile(s)
+[2026-03-04 10:11:21] [INFO] Starting profile: fast_rampUp.csv on 1 online device(s)
+[2026-03-04 10:11:22] [INFO] Starting adhesive listeners on 1 device(s)...
+[2026-03-04 10:11:34] [SUCCESS] Listener ready on lightsoff-j10
+[2026-03-04 10:11:34] [INFO] Loading profile: fast_rampUp.csv
+[2026-03-04 10:11:34] [SUCCESS] Loaded 31 steps
+[2026-03-04 10:11:34] [SUCCESS] [1/31] t=0.0s -> 0.0,0.0,0.0 ✓
+[2026-03-04 10:11:35] [SUCCESS] [2/31] t=1.0s -> 1247.0,0.0,0.0 ✓
+[2026-03-04 10:11:36] [SUCCESS] [3/31] t=2.0s -> 3245.0,4.0,4.0 ✓
+[2026-03-04 10:11:37] [SUCCESS] [4/31] t=3.0s -> 5163.0,98.0,108.0 ✓
+[2026-03-04 10:11:38] [SUCCESS] [5/31] t=4.0s -> 5803.0,870.0,889.0 ✓
+[2026-03-04 10:11:39] [SUCCESS] [6/31] t=5.0s -> 5588.0,952.0,949.0 ✓
+[2026-03-04 10:11:40] [SUCCESS] [7/31] t=6.0s -> 5107.0,863.0,848.0 ✓
+[2026-03-04 10:11:41] [SUCCESS] [8/31] t=7.0s -> 4200.0,679.0,654.0 ✓
+[2026-03-04 10:11:42] [SUCCESS] [9/31] t=8.0s -> 3214.0,457.0,428.0 ✓
+[2026-03-04 10:11:43] [SUCCESS] [10/31] t=9.0s -> 2615.0,268.0,245.0 ✓
+[2026-03-04 10:11:44] [SUCCESS] [11/31] t=10.0s -> 2226.0,152.0,140.0 ✓
+[2026-03-04 10:11:45] [SUCCESS] [12/31] t=11.0s -> 1931.0,98.0,92.0 ✓
+[2026-03-04 10:11:46] [SUCCESS] [13/31] t=12.0s -> 1687.0,73.0,69.0 ✓
+[2026-03-04 10:11:47] [SUCCESS] [14/31] t=13.0s -> 1478.0,59.0,56.0 ✓
+[2026-03-04 10:11:48] [SUCCESS] [15/31] t=14.0s -> 1294.0,48.0,45.0 ✓
+[2026-03-04 10:11:49] [SUCCESS] [16/31] t=15.0s -> 1130.0,38.0,36.0 ✓
+[2026-03-04 10:11:50] [SUCCESS] [17/31] t=16.0s -> 985.0,31.0,29.0 ✓
+[2026-03-04 10:11:51] [SUCCESS] [18/31] t=17.0s -> 860.0,24.0,23.0 ✓
+[2026-03-04 10:11:52] [SUCCESS] [19/31] t=18.0s -> 761.0,19.0,18.0 ✓
+[2026-03-04 10:11:53] [SUCCESS] [20/31] t=19.0s -> 689.0,16.0,15.0 ✓
+[2026-03-04 10:11:54] [SUCCESS] [21/31] t=20.0s -> 639.0,14.0,14.0 ✓
+[2026-03-04 10:11:55] [SUCCESS] [22/31] t=21.0s -> 599.0,13.0,13.0 ✓
+[2026-03-04 10:11:56] [SUCCESS] [23/31] t=22.0s -> 565.0,13.0,13.0 ✓
+[2026-03-04 10:11:57] [SUCCESS] [24/31] t=23.0s -> 535.0,12.0,12.0 ✓
+[2026-03-04 10:11:58] [SUCCESS] [25/31] t=24.0s -> 507.0,11.0,11.0 ✓
+[2026-03-04 10:11:59] [SUCCESS] [26/31] t=25.0s -> 482.0,9.0,6.0 ✓
+[2026-03-04 10:12:00] [SUCCESS] [27/31] t=26.0s -> 450.0,2.0,1.0 ✓
+[2026-03-04 10:12:01] [SUCCESS] [28/31] t=27.0s -> 389.0,0.0,0.0 ✓
+[2026-03-04 10:12:02] [SUCCESS] [29/31] t=28.0s -> 292.0,0.0,0.0 ✓
+[2026-03-04 10:12:03] [SUCCESS] [30/31] t=29.0s -> 160.0,0.0,0.0 ✓
+[2026-03-04 10:12:04] [SUCCESS] [31/31] t=30.0s -> 0.0,0.0,0.0 ✓
+[2026-03-04 10:12:04] [INFO] Profile complete. Sending STOP (0,0,0)...
+[2026-03-04 10:12:04] [SUCCESS] Profile execution completed successfully
+[2026-03-04 10:12:09] [INFO] Found 3 adhesive profile(s)
+[2026-03-04 10:12:13] [INFO] Starting profile: adh_test_profile.csv on 1 online device(s)
+[2026-03-04 10:12:13] [INFO] Starting adhesive listeners on 1 device(s)...
+[2026-03-04 10:12:25] [SUCCESS] Listener ready on lightsoff-j10
+[2026-03-04 10:12:25] [INFO] Loading profile: adh_test_profile.csv
+[2026-03-04 10:12:25] [SUCCESS] Loaded 21 steps
+[2026-03-04 10:12:26] [SUCCESS] [1/21] t=0.0s -> 0.0,0.0,0.0 ✓
+[2026-03-04 10:12:26] [SUCCESS] [2/21] t=1.0s -> 10565.11,448.34,448.34 ✓
+[2026-03-04 10:12:27] [SUCCESS] [3/21] t=2.0s -> 23013.92,638.89,638.89 ✓
+[2026-03-04 10:12:28] [SUCCESS] [4/21] t=3.0s -> 37755.94,713.99,713.99 ✓
+[2026-03-04 10:12:29] [SUCCESS] [5/21] t=4.0s -> 54709.25,739.77,739.77 ✓
+[2026-03-04 10:12:30] [SUCCESS] [6/21] t=5.0s -> 71662.57,733.04,733.04 ✓
+[2026-03-04 10:12:31] [SUCCESS] [7/21] t=6.0s -> 85421.79,700.54,700.54 ✓
+[2026-03-04 10:12:32] [SUCCESS] [8/21] t=7.0s -> 94103.19,641.13,641.13 ✓
+[2026-03-04 10:12:33] [SUCCESS] [9/21] t=8.0s -> 98443.9,554.82,554.82 ✓
+[2026-03-04 10:12:34] [SUCCESS] [10/21] t=9.0s -> 100000.0,451.71,451.71 ✓
+[2026-03-04 10:12:35] [SUCCESS] [11/21] t=10.0s -> 99508.6,341.86,341.86 ✓
+[2026-03-04 10:12:36] [SUCCESS] [12/21] t=11.0s -> 96887.8,247.71,247.71 ✓
+[2026-03-04 10:12:37] [SUCCESS] [13/21] t=12.0s -> 91236.69,258.92,258.92 ✓
+[2026-03-04 10:12:38] [SUCCESS] [14/21] t=13.0s -> 80180.18,902.29,902.29 ✓
+[2026-03-04 10:12:39] [SUCCESS] [15/21] t=14.0s -> 64619.16,1150.0,1150.0 ✓
+[2026-03-04 10:12:40] [SUCCESS] [16/21] t=15.0s -> 52579.85,1055.85,1055.85 ✓
+[2026-03-04 10:12:41] [SUCCESS] [17/21] t=16.0s -> 43816.54,545.86,545.86 ✓
+[2026-03-04 10:12:42] [SUCCESS] [18/21] t=17.0s -> 36199.84,297.03,297.03 ✓
+[2026-03-04 10:12:43] [SUCCESS] [19/21] t=18.0s -> 28501.23,162.52,162.52 ✓
+[2026-03-04 10:12:44] [SUCCESS] [20/21] t=19.0s -> 19574.12,71.73,71.73 ✓
+[2026-03-04 10:12:45] [SUCCESS] [21/21] t=20.0s -> 0.0,0.0,0.0 ✓
+[2026-03-04 10:12:45] [INFO] Profile complete. Sending STOP (0,0,0)...
+[2026-03-04 10:12:46] [SUCCESS] Profile execution completed successfully
+[2026-03-04 10:12:51] [INFO] Found 3 adhesive profile(s)
+[2026-03-04 10:12:56] [INFO] Starting profile: adh_test_nonsync.csv on 1 online device(s)
+[2026-03-04 10:12:56] [INFO] Starting adhesive listeners on 1 device(s)...
+[2026-03-04 10:13:08] [SUCCESS] Listener ready on lightsoff-j10
+[2026-03-04 10:13:08] [INFO] Loading profile: adh_test_nonsync.csv
+[2026-03-04 10:13:08] [SUCCESS] Loaded 21 steps
+[2026-03-04 10:13:08] [SUCCESS] [1/21] t=0.0s -> 0.0,0.0,0.0 ✓
+[2026-03-04 10:13:09] [SUCCESS] [2/21] t=1.0s -> 10565.11,448.34,0.0 ✓
+[2026-03-04 10:13:10] [SUCCESS] [3/21] t=2.0s -> 23013.92,638.89,0.0 ✓
+[2026-03-04 10:13:11] [SUCCESS] [4/21] t=3.0s -> 37755.94,713.99,0.0 ✓
+[2026-03-04 10:13:12] [SUCCESS] [5/21] t=4.0s -> 54709.25,739.77,200.0 ✓
+[2026-03-04 10:13:13] [SUCCESS] [6/21] t=5.0s -> 71662.57,733.04,200.0 ✓
+[2026-03-04 10:13:14] [SUCCESS] [7/21] t=6.0s -> 85421.79,700.54,200.0 ✓
+[2026-03-04 10:13:15] [SUCCESS] [8/21] t=7.0s -> 94103.19,641.13,1000.0 ✓
+[2026-03-04 10:13:16] [SUCCESS] [9/21] t=8.0s -> 98443.9,554.82,1000.0 ✓
+[2026-03-04 10:13:17] [SUCCESS] [10/21] t=9.0s -> 100000.0,451.71,-600.0 ✓
+[2026-03-04 10:13:18] [SUCCESS] [11/21] t=10.0s -> 99508.6,341.86,-600.0 ✓
+[2026-03-04 10:13:19] [SUCCESS] [12/21] t=11.0s -> 96887.8,247.71,-600.0 ✓
+[2026-03-04 10:13:20] [SUCCESS] [13/21] t=12.0s -> 91236.69,258.92,258.92 ✓
+[2026-03-04 10:13:21] [SUCCESS] [14/21] t=13.0s -> 80180.18,902.29,902.29 ✓
+[2026-03-04 10:13:22] [SUCCESS] [15/21] t=14.0s -> 64619.16,1150.0,1150.0 ✓
+[2026-03-04 10:13:23] [SUCCESS] [16/21] t=15.0s -> 52579.85,1055.85,1055.85 ✓
+[2026-03-04 10:13:24] [SUCCESS] [17/21] t=16.0s -> 43816.54,545.86,545.86 ✓
+[2026-03-04 10:13:25] [SUCCESS] [18/21] t=17.0s -> 36199.84,297.03,297.03 ✓
+[2026-03-04 10:13:26] [SUCCESS] [19/21] t=18.0s -> 28501.23,162.52,162.52 ✓
+[2026-03-04 10:13:27] [SUCCESS] [20/21] t=19.0s -> 19574.12,71.73,71.73 ✓
+[2026-03-04 10:13:28] [SUCCESS] [21/21] t=20.0s -> 0.0,0.0,0.0 ✓
+[2026-03-04 10:13:28] [INFO] Profile complete. Sending STOP (0,0,0)...
+[2026-03-04 10:13:28] [SUCCESS] Profile execution completed successfully
+[2026-03-04 10:13:33] [INFO] Found 3 adhesive profile(s)
+[2026-03-04 10:13:35] [INFO] Starting profile: fast_rampUp.csv on 1 online device(s)
+[2026-03-04 10:13:35] [INFO] Starting adhesive listeners on 1 device(s)...
+[2026-03-04 10:13:49] [SUCCESS] Listener ready on lightsoff-j10
+[2026-03-04 10:13:49] [INFO] Loading profile: fast_rampUp.csv
+[2026-03-04 10:13:49] [SUCCESS] Loaded 31 steps
+[2026-03-04 10:13:49] [SUCCESS] [1/31] t=0.0s -> 0.0,0.0,0.0 ✓
+[2026-03-04 10:13:50] [SUCCESS] [2/31] t=1.0s -> 1247.0,0.0,0.0 ✓
+[2026-03-04 10:13:51] [SUCCESS] [3/31] t=2.0s -> 3245.0,4.0,4.0 ✓
+[2026-03-04 10:13:52] [SUCCESS] [4/31] t=3.0s -> 5163.0,98.0,108.0 ✓
+[2026-03-04 10:13:53] [SUCCESS] [5/31] t=4.0s -> 5803.0,870.0,889.0 ✓
+[2026-03-04 10:13:54] [SUCCESS] [6/31] t=5.0s -> 5588.0,952.0,949.0 ✓
+[2026-03-04 10:13:55] [SUCCESS] [7/31] t=6.0s -> 5107.0,863.0,848.0 ✓
+[2026-03-04 10:13:56] [SUCCESS] [8/31] t=7.0s -> 4200.0,679.0,654.0 ✓
+[2026-03-04 10:13:57] [SUCCESS] [9/31] t=8.0s -> 3214.0,457.0,428.0 ✓
+[2026-03-04 10:13:58] [SUCCESS] [10/31] t=9.0s -> 2615.0,268.0,245.0 ✓
+[2026-03-04 10:13:59] [SUCCESS] [11/31] t=10.0s -> 2226.0,152.0,140.0 ✓
+[2026-03-04 10:14:00] [SUCCESS] [12/31] t=11.0s -> 1931.0,98.0,92.0 ✓
+[2026-03-04 10:14:01] [SUCCESS] [13/31] t=12.0s -> 1687.0,73.0,69.0 ✓
+[2026-03-04 10:14:02] [SUCCESS] [14/31] t=13.0s -> 1478.0,59.0,56.0 ✓
+[2026-03-04 10:14:03] [ERROR] ADHESIVE EMERGENCY STOP activated
+[2026-03-04 10:14:03] [SUCCESS] Emergency stop sent to lightsoff-j10
+[2026-03-04 10:14:03] [SUCCESS] [15/31] t=14.0s -> 1294.0,48.0,45.0 ✓
+[2026-03-04 10:14:04] [SUCCESS] [16/31] t=15.0s -> 1130.0,38.0,36.0 ✓
+[2026-03-04 10:14:05] [SUCCESS] [17/31] t=16.0s -> 985.0,31.0,29.0 ✓
+[2026-03-04 10:14:06] [SUCCESS] [18/31] t=17.0s -> 860.0,24.0,23.0 ✓
+[2026-03-04 10:14:07] [SUCCESS] [19/31] t=18.0s -> 761.0,19.0,18.0 ✓
+[2026-03-04 10:14:07] [ERROR] ADHESIVE EMERGENCY STOP activated
+[2026-03-04 10:14:07] [SUCCESS] Emergency stop sent to lightsoff-j10
+[2026-03-04 10:14:08] [SUCCESS] [20/31] t=19.0s -> 689.0,16.0,15.0 ✓
+[2026-03-04 10:14:09] [SUCCESS] [21/31] t=20.0s -> 639.0,14.0,14.0 ✓
+[2026-03-04 10:14:10] [SUCCESS] [22/31] t=21.0s -> 599.0,13.0,13.0 ✓
+[2026-03-04 10:14:11] [SUCCESS] [23/31] t=22.0s -> 565.0,13.0,13.0 ✓
+[2026-03-04 10:14:12] [SUCCESS] [24/31] t=23.0s -> 535.0,12.0,12.0 ✓
+[2026-03-04 10:14:12] [INFO] Starting adhesive manual control on 1 online device(s)
+[2026-03-04 10:14:13] [ERROR] TCP error on lightsoff-j10: [Errno 111] Connection refused
+[2026-03-04 10:14:13] [ERROR] [25/31] t=24.0s -> 507.0,11.0,11.0 ✗
+[2026-03-04 10:14:13] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-04 10:14:13] [ERROR] Failed to stop motors on lightsoff-j10: [Errno 111] Connection refused
+[2026-03-04 10:14:14] [ERROR] TCP error on lightsoff-j10: [Errno 111] Connection refused
+[2026-03-04 10:14:14] [ERROR] [26/31] t=25.0s -> 482.0,9.0,6.0 ✗
+[2026-03-04 10:14:14] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-04 10:14:14] [ERROR] Failed to stop motors on lightsoff-j10: [Errno 111] Connection refused
+[2026-03-04 10:14:14] [WARNING] Sending ZERO command to 1 online device(s)
+[2026-03-04 10:14:14] [ERROR] Failed to stop motors on lightsoff-j10: [Errno 111] Connection refused
+[2026-03-04 10:14:15] [ERROR] TCP error on lightsoff-j10: [Errno 111] Connection refused
+[2026-03-04 10:14:15] [ERROR] [27/31] t=26.0s -> 450.0,2.0,1.0 ✗
+[2026-03-04 10:14:16] [ERROR] TCP error on lightsoff-j10: [Errno 111] Connection refused
+[2026-03-04 10:14:16] [ERROR] [28/31] t=27.0s -> 389.0,0.0,0.0 ✗
+[2026-03-04 10:14:17] [ERROR] TCP error on lightsoff-j10: [Errno 111] Connection refused
+[2026-03-04 10:14:17] [ERROR] [29/31] t=28.0s -> 292.0,0.0,0.0 ✗
+[2026-03-04 10:14:18] [SUCCESS] [30/31] t=29.0s -> 160.0,0.0,0.0 ✓
+[2026-03-04 10:14:19] [SUCCESS] [31/31] t=30.0s -> 0.0,0.0,0.0 ✓
+[2026-03-04 10:14:19] [INFO] Profile complete. Sending STOP (0,0,0)...
+[2026-03-04 10:14:19] [SUCCESS] Profile execution completed successfully
+[2026-03-04 10:14:22] [INFO] Shutting down...
+[2026-03-04 10:14:24] [SUCCESS] UDP server closed
+=== Dashboard Log Ended at 2026-03-04 10:14:24 ===
