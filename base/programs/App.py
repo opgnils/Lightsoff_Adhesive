@@ -285,7 +285,7 @@ def cli_motor_control(appstate:dict):
 
 
 def _cli_motor_action(appstate: dict, motor_direction: bool):
-    """Helper for assembly robot menu to engage/disengage clamps once.
+    """Helper for assembly menu to engage/disengage clamps once.
 
     Args:
         appstate (dict): Shared application state.
@@ -804,12 +804,12 @@ def cli_menu_component(appstate: dict):
 
 
 def cli_menu_assembly_robot(appstate: dict):
-    """Assembly robot submenu: engage or disengage clamps."""
+    """Assembly submenu: engage or disengage clamps."""
 
     while True:
         print("\033c", end="")
         cli = Bullet(
-            prompt="\nAssembly Robot:",
+            prompt="\nAssembly:",
             choices=[
                 "a. Engage clamps",
                 "b. Disengage clamps",
@@ -984,14 +984,14 @@ def _run_adhesive_profile(appstate: dict):
 
 
 def cli_menu_adhesive_robot(appstate: dict):
-    """Adhesive robot submenu: manual command input or profile playback."""
+    """Adhesive submenu: manual command input or profile playback."""
 
     while True:
         devices = appstate.get("selected_devices", [])
         print("\033c", end="")
 
         # Connection / listener status indicator
-        print("Adhesive Robot - Connection Status:")
+        print("Adhesive - Connection Status:")
         if not devices:
             print("  No robots selected. Use 'Connect' menu first.\n")
         else:
@@ -1031,7 +1031,7 @@ def cli_menu_adhesive_robot(appstate: dict):
                 ensure_adhesive_listener_running(d)
 
         cli = Bullet(
-            prompt="\nAdhesive Robot:",
+            prompt="\nAdhesive:",
             choices=[
                 "a. Manual input",
                 "b. Load profile (CSV)",
@@ -1168,7 +1168,7 @@ def _cli_emergency_stop(appstate: dict):
 
 
 def _cli_adhesive_action(appstate: dict, engage: bool):
-    """Adhesive robot control loop using a persistent Jetson listener.
+    """Adhesive control loop using a persistent Jetson listener.
 
     Lets the user choose manual RPM/flowrates and STOP ALL.
     """
@@ -1326,8 +1326,8 @@ def cli_main_menu(appstate: dict, plotter: PlotManager, config: str):
             choices=[
                 "1. Connect",
                 "2. Component",
-                "3. Assembly Robot",
-                "4. Adhesive Robot",
+                "3. Assembly",
+                "4. Adhesive",
                 "5. Tracking",
                 "6. Quit",
             ],
@@ -1411,6 +1411,6 @@ if __name__ == "__main__":
     )
 
     # Immediately enter the new top-level menu. From there, the user can
-    # choose Component, Assembly Robot (motors), Tracking, etc.
+    # choose Component, Assembly (motors), Tracking, etc.
     cli_main_menu(APPSTATE, plotter, CONFIG)
 
