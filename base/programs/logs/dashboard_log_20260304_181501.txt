@@ -1,0 +1,25 @@
+=== Dashboard Log Started at 2026-03-04 18:15:01 ===
+[2026-03-04 18:15:01] [SUCCESS] Dashboard started
+[2026-03-04 18:15:03] [INFO] Refreshing device list...
+[2026-03-04 18:15:04] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-04 18:15:04] [SUCCESS] Found 6 device(s), 1 online
+[2026-03-04 18:15:08] [INFO] Starting code update on 1 online device(s)...
+[2026-03-04 18:15:10] [SUCCESS] Code update completed on 1 device(s), 2 file(s) updated
+[2026-03-04 18:15:14] [INFO] Starting velocity listener on 1 online device(s)...
+[2026-03-04 18:15:14] [INFO] Starting velocity listener on lightsoff-j10...
+[2026-03-04 18:15:25] [WARNING] Listener started on lightsoff-j10 but verification timed out - should still work
+[2026-03-04 18:15:27] [INFO] Starting velocity control on 1 online device(s)
+[2026-03-04 18:15:27] [INFO] Velocity control ready - ensure velocity_control.py listener is running
+[2026-03-04 18:15:31] [INFO] Sending velocity command to 1 online device(s): 200 RPM
+[2026-03-04 18:15:31] [SUCCESS] Velocity set on lightsoff-j10: 200 RPM
+[2026-03-04 18:15:45] [INFO] Sending velocity command to 1 online device(s): -100 RPM
+[2026-03-04 18:15:45] [SUCCESS] Velocity set on lightsoff-j10: -100 RPM
+[2026-03-04 18:15:54] [INFO] Sending velocity command to 1 online device(s): 200 RPM
+[2026-03-04 18:15:54] [SUCCESS] Velocity set on lightsoff-j10: 200 RPM
+[2026-03-04 18:16:26] [WARNING] Sending STOP command to 1 online device(s)
+[2026-03-04 18:16:26] [SUCCESS] Motor stopped on lightsoff-j10
+[2026-03-04 18:16:27] [INFO] Checking velocity listener status on 1 online device(s)...
+[2026-03-04 18:16:28] [SUCCESS] Velocity listener running on lightsoff-j10
+[2026-03-04 18:19:50] [INFO] Shutting down...
+[2026-03-04 18:19:52] [SUCCESS] UDP server closed
+=== Dashboard Log Ended at 2026-03-04 18:19:52 ===

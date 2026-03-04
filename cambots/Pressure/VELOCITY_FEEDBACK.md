@@ -48,10 +48,13 @@ The VelocityControl widget polls actual velocity every second:
 ### Current Status Panel
 ```
 Current Status:
-  • Commanded: 300 RPM  ENGAGE (↓)
-  • Actual: 287 RPM  ~
+  • Commanded: 100 RPM  DISENGAGE (↓)
+  • Actual: 98 RPM  ✓
+  • Torque: 8.2 Nm (41.0%)
   • Distance traveled: 15.23 mm
 ```
+
+**New in this version**: Real-time torque monitoring shows motor load as both absolute torque (Nm) and percentage of rated capacity. Color indicates load level (green <30%, yellow 30-70%, red >70%).
 
 ### Tracking Quality Indicators
 

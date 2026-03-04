@@ -411,6 +411,13 @@ class VelocityControl(Container):
         self._devices = devices or []
         self.current_velocity = 0  # Current commanded velocity in RPM
         self.actual_velocity = 0  # Actual motor velocity from encoder
+        # All torque/current object values (None if failed to read)
+        self.torque_6078 = None  # Current DS402 standard
+        self.torque_221C = None  # Nanotec actual current (mA)
+        self.torque_2030 = None  # Nanotec motor current (mA)
+        self.torque_6074 = None  # Torque demand
+        self.torque_6077 = None  # Torque actual
+        self.torque_6071 = None  # Target torque
         self.distance_traveled = 0.0  # Accumulated distance in mm
         self.start_time = None  # Time when velocity was last set
         self.update_timer = None  # Timer for updating display
@@ -481,7 +488,7 @@ class VelocityControl(Container):
             self.distance_traveled += distance_mm
     
     def _fetch_actual_velocity(self) -> None:
-        """Fetch actual velocity from motor (runs in background thread)."""
+        """Fetch actual velocity and torque from motor (runs in background thread)."""
         import socket
         
         if not self._devices:
@@ -495,16 +502,27 @@ class VelocityControl(Container):
                 
                 host = d.get("HostName")
                 sock.connect((host, 5002))
-                sock.sendall(b"GET_VELOCITY\n")
+                
+                # Use GET_STATUS to get velocity and all torque values
+                sock.sendall(b"GET_STATUS\n")
                 
                 response = sock.recv(1024).decode('utf-8').strip()
                 sock.close()
                 
-                # Parse response: "ACTUAL:123"
-                if response.startswith("ACTUAL:"):
+                # Parse response: "STATUS:vel,t6078,t221C,t2030,t6074,t6077,t6071"
+                # 'X' means object read failed
+                if response.startswith("STATUS:"):
                     try:
-                        actual_vel = int(response.split(":")[1])
-                        self.actual_velocity = actual_vel
+                        values = response.split(":")[1].split(",")
+                        if len(values) >= 7:
+                            self.actual_velocity = int(values[0])
+                            # Parse torque values, 'X' means failed
+                            self.torque_6078 = None if values[1] == 'X' else int(values[1])
+                            self.torque_221C = None if values[2] == 'X' else int(values[2])
+                            self.torque_2030 = None if values[3] == 'X' else int(values[3])
+                            self.torque_6074 = None if values[4] == 'X' else int(values[4])
+                            self.torque_6077 = None if values[5] == 'X' else int(values[5])
+                            self.torque_6071 = None if values[6] == 'X' else int(values[6])
                     except (ValueError, IndexError):
                         pass
                 
@@ -555,15 +573,84 @@ class VelocityControl(Container):
                 else:
                     vel_status = "[#ff5555]![/#ff5555]"  # Poor tracking
             
-            # Format display with both commanded and actual velocity
+            # Helper function to format torque value (in per mille)
+            def format_torque(value_permille, is_current_ma=False):
+                if value_permille is None:
+                    return "[#6272a4]---[/#6272a4]"
+                
+                if is_current_ma:
+                    # Current in mA - estimate torque (rough: max current ~2000mA = 20Nm)
+                    torque_nm = (value_permille / 2000.0) * 20.0
+                    # Color based on current
+                    if abs(value_permille) < 600:
+                        color = "#50fa7b"  # Green < 600mA
+                    elif abs(value_permille) < 1200:
+                        color = "#f1fa8c"  # Yellow 600-1200mA
+                    else:
+                        color = "#ff5555"  # Red > 1200mA
+                    return f"[{color}]{value_permille:4d}mA (~{torque_nm:3.1f}Nm)[/{color}]"
+                else:
+                    # Per mille (‰)
+                    torque_nm = (value_permille / 1000.0) * 20.0
+                    torque_percent = value_permille / 10.0
+                    # Color based on load
+                    if abs(torque_percent) < 30:
+                        color = "#50fa7b"  # Green
+                    elif abs(torque_percent) < 70:
+                        color = "#f1fa8c"  # Yellow
+                    else:
+                        color = "#ff5555"  # Red
+                    return f"[{color}]{torque_nm:4.1f}Nm ({torque_percent:4.1f}%)[/{color}]"
+            
+            # Format all torque/current values
+            t6078_str = format_torque(self.torque_6078)
+            t221C_str = format_torque(self.torque_221C, is_current_ma=True)
+            t2030_str = format_torque(self.torque_2030, is_current_ma=True)
+            t6074_str = format_torque(self.torque_6074)
+            t6077_str = format_torque(self.torque_6077)
+            t6071_str = format_torque(self.torque_6071)
+            
+            # Format display with velocity and all torque readings
             status_text = (
                 f"\n[b]Current Status:[/b]\n"
                 f"  • Commanded: [#8be9fd]{self.current_velocity} RPM[/#8be9fd] {direction}\n"
                 f"  • Actual: [#bd93f9]{self.actual_velocity} RPM[/#bd93f9] {vel_status}\n"
-                f"  • Distance traveled: [#f1fa8c]{current_distance:.2f} mm[/#f1fa8c]\n"
+                f"  • Distance: [#f1fa8c]{current_distance:.2f} mm[/#f1fa8c]\n"
+                f"\n[b]Current Readings (mA):[/b]\n"
+                f"  • 0x221C (Nanotec):      {t221C_str}\n"
+                f"  • 0x2030 (Motor):        {t2030_str}\n"
+                f"\n[b]Torque Readings (‰):[/b]\n"
+                f"  • 0x6078 (DS402):        {t6078_str}\n"
+                f"  • 0x6074 (Demand):       {t6074_str}\n"
+                f"  • 0x6077 (Actual):       {t6077_str}\n"
+                f"  • 0x6071 (Target):       {t6071_str}\n"
             )
             
             status_widget.update(status_text)
+            
+            # Update the app status bar with torque/current info
+            try:
+                app = self.app
+                # Find first working value to display in status bar
+                status_bar_text = f"Vel: {self.actual_velocity}RPM"
+                
+                if self.torque_221C is not None:
+                    status_bar_text += f" | Current: {self.torque_221C}mA"
+                elif self.torque_2030 is not None:
+                    status_bar_text += f" | Current: {self.torque_2030}mA"
+                elif self.torque_6078 is not None:
+                    torque_nm = (self.torque_6078 / 1000.0) * 20.0
+                    status_bar_text += f" | Torque: {torque_nm:.1f}Nm"
+                elif self.torque_6074 is not None:
+                    torque_nm = (self.torque_6074 / 1000.0) * 20.0
+                    status_bar_text += f" | Torque: {torque_nm:.1f}Nm"
+                
+                status_bar_text += f" | Dist: {current_distance:.1f}mm"
+                
+                if hasattr(app, 'set_status_message'):
+                    app.set_status_message(status_bar_text)
+            except Exception:
+                pass  # Status bar update not critical
         except Exception:
             pass  # Widget might not be mounted yet
     

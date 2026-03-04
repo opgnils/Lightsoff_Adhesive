@@ -26,15 +26,18 @@ def w(accessor, dev, od, value: int, bitlen: int):
     if r.hasError():
         raise RuntimeError(f"writeNumber({od.toString()}={value}) failed: {r.getError()}")
 
-def rnum(accessor, dev, od, signed: bool = False) -> int:
+def rnum(accessor, dev, od, signed: bool = False, bitlen: int = 32) -> int:
     r = accessor.readNumber(dev, od)
     if r.hasError():
         raise RuntimeError(f"readNumber({od.toString()}) failed: {r.getError()}")
     value = int(r.getResult())
     
-    # Convert unsigned 32-bit to signed 32-bit if requested
-    if signed and value >= 0x80000000:
-        value = value - 0x100000000
+    # Convert unsigned to signed if requested
+    if signed:
+        if bitlen == 16 and value >= 0x8000:
+            value = value - 0x10000
+        elif bitlen == 32 and value >= 0x80000000:
+            value = value - 0x100000000
     
     return value
 

@@ -1,0 +1,21 @@
+=== Dashboard Log Started at 2026-03-04 17:51:59 ===
+[2026-03-04 17:51:59] [SUCCESS] Dashboard started
+[2026-03-04 17:52:01] [INFO] Refreshing device list...
+[2026-03-04 17:52:02] [INFO] Auto-selected 1 previously selected device(s)
+[2026-03-04 17:52:02] [SUCCESS] Found 6 device(s), 1 online
+[2026-03-04 17:52:04] [INFO] Starting code update on 1 online device(s)...
+[2026-03-04 17:52:05] [SUCCESS] Code update completed on 1 device(s), 5 file(s) updated
+[2026-03-04 17:52:09] [INFO] Starting velocity listener on 1 online device(s)...
+[2026-03-04 17:52:09] [INFO] Starting velocity listener on lightsoff-j10...
+[2026-03-04 17:52:20] [WARNING] Listener started on lightsoff-j10 but verification timed out - should still work
+[2026-03-04 17:53:24] [INFO] Starting velocity control on 1 online device(s)
+[2026-03-04 17:53:24] [INFO] Velocity control ready - ensure velocity_control.py listener is running
+[2026-03-04 17:53:27] [INFO] Sending velocity command to 1 online device(s): 100 RPM
+[2026-03-04 17:53:27] [SUCCESS] Velocity set on lightsoff-j10: 100 RPM
+[2026-03-04 17:53:39] [INFO] Sending velocity command to 1 online device(s): -100 RPM
+[2026-03-04 17:53:39] [SUCCESS] Velocity set on lightsoff-j10: -100 RPM
+[2026-03-04 17:54:00] [WARNING] Sending STOP command to 1 online device(s)
+[2026-03-04 17:54:00] [SUCCESS] Motor stopped on lightsoff-j10
+[2026-03-04 18:06:26] [INFO] Shutting down...
+[2026-03-04 18:06:28] [SUCCESS] UDP server closed
+=== Dashboard Log Ended at 2026-03-04 18:06:28 ===

@@ -81,6 +81,12 @@ echo "0" | nc <remote-host> 5002
 # Get actual velocity from encoder
 echo "GET_VELOCITY" | nc <remote-host> 5002
 
+# Get actual torque
+echo "GET_TORQUE" | nc <remote-host> 5002
+
+# Get both velocity and torque
+echo "GET_STATUS" | nc <remote-host> 5002
+
 # Shutdown listener
 echo "STOP" | nc <remote-host> 5002
 ```
@@ -98,6 +104,35 @@ Response:
 ```
 OK:<velocity>\n
 ```
+
+### Get Velocity
+```
+GET_VELOCITY\n
+```
+Response:
+```
+ACTUAL:<velocity>\n
+```
+
+### Get Torque
+```
+GET_TORQUE\n
+```
+Response:
+```
+TORQUE:<torque_permille>\n
+```
+Example: `TORQUE:500` means 50% of rated torque (10 Nm)
+
+### Get Status (Velocity + Torque)
+```
+GET_STATUS\n
+```
+Response:
+```
+STATUS:<velocity>,<torque>\n
+```
+Example: `STATUS:100,500` means 100 RPM and 50% torque
 
 ### Get Actual Velocity
 Send:
