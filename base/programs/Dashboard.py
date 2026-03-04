@@ -57,6 +57,49 @@ except ImportError as e:
     ) from e
 
 
+# ─── Helper Functions ─────────────────────────────────────────────────────────
+
+
+def send_tcp_command_robust(device, command: str, port: int = 5001, 
+                            retries: int = 3, timeout: float = 2.0, 
+                            retry_delay: float = 0.5) -> tuple[bool, str]:
+    """Send a TCP command to a device with automatic retries.
+    
+    Args:
+        device: Device dict with HostName
+        command: Command string to send (e.g., "500,0,0")
+        port: TCP port (default 5001)
+        retries: Number of retry attempts (default 3)
+        timeout: Socket timeout in seconds (default 2.0)
+        retry_delay: Delay between retries in seconds (default 0.5)
+    
+    Returns:
+        (success: bool, error_message: str)
+        If successful, error_message is empty string.
+    """
+    host = device.get("HostName", "localhost")
+    last_error = ""
+    
+    for attempt in range(retries):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.settimeout(timeout)
+                sock.connect((host, port))
+                sock.sendall(f"{command}\n".encode())
+                return True, ""  # Success!
+        except (socket.timeout, ConnectionRefusedError, OSError) as e:
+            last_error = str(e)
+            if attempt < retries - 1:  # Not the last attempt
+                time.sleep(retry_delay)
+            continue
+        except Exception as e:
+            last_error = str(e)
+            # For unexpected errors, don't retry
+            break
+    
+    return False, last_error
+
+
 # ─── Widgets ──────────────────────────────────────────────────────────────────
 
 
@@ -1714,14 +1757,32 @@ class LightsOffDashboard(App):
         # Clear emergency stop flag when entering manual control
         self._emergency_stop_flag = False
         
+        # Show initial message about listener startup
+        self._log(f"Ensuring adhesive listeners are running on {len(online_devices)} device(s)...", "info")
+        
         # Ensure listeners are running in background on online devices only
         def ensure_listeners():
+            ready_count = 0
             for d in online_devices:
                 try:
-                    ensure_adhesive_listener_running(d)
-                    self.call_from_thread(self._log, f"Adhesive listener ready on {d['Host']}", "success")
+                    self.call_from_thread(self._log, f"Starting listener on {d['Host']}...", "info")
+                    success = ensure_adhesive_listener_running(d)
+                    
+                    if success:
+                        ready_count += 1
+                        self.call_from_thread(self._log, f"✓ Listener ready on {d['Host']}", "success")
+                    else:
+                        self.call_from_thread(self._log, f"⚠ Listener verification inconclusive on {d['Host']}", "warning")
                 except Exception as e:
-                    self.call_from_thread(self._log, f"Failed to start listener on {d['Host']}: {e}", "error")
+                    self.call_from_thread(self._log, f"✗ Failed to start listener on {d['Host']}: {e}", "error")
+            
+            # Summary message
+            if ready_count == len(online_devices):
+                self.call_from_thread(self._log, f"All {ready_count} listener(s) ready - manual control active", "success")
+            elif ready_count > 0:
+                self.call_from_thread(self._log, f"{ready_count}/{len(online_devices)} listener(s) ready - some devices may not respond", "warning")
+            else:
+                self.call_from_thread(self._log, f"No listeners ready - commands will likely fail", "error")
         
         thread = threading.Thread(target=ensure_listeners, daemon=True)
         thread.start()
@@ -1789,21 +1850,22 @@ class LightsOffDashboard(App):
                 return
             
             def send_commands():
+                success_count = 0
                 for d in online_devices:
-                    try:
-                        # Send command via TCP to the adhesive listener
-                        host = d.get("HostName", "localhost")
-                        port = 5001
-                        
-                        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                            sock.settimeout(2)
-                            sock.connect((host, port))
-                            sock.sendall(f"{command}\n".encode())
-                            self.call_from_thread(self._log, 
-                                f"Command sent to {d['Host']}: {command}", "success")
-                    except Exception as e:
+                    # Use robust TCP sending with retries
+                    success, error = send_tcp_command_robust(d, command, retries=3, retry_delay=0.5)
+                    
+                    if success:
+                        success_count += 1
                         self.call_from_thread(self._log, 
-                            f"Failed to send to {d['Host']}: {e}", "error")
+                            f"Command sent to {d['Host']}: {command}", "success")
+                    else:
+                        self.call_from_thread(self._log, 
+                            f"Failed to send to {d['Host']} after 3 retries: {error}", "error")
+                
+                if success_count == 0:
+                    self.call_from_thread(self._log, 
+                        "No commands succeeded - listener may not be ready yet", "warning")
             
             thread = threading.Thread(target=send_commands, daemon=True)
             thread.start()
@@ -1843,20 +1905,18 @@ class LightsOffDashboard(App):
             self._log(f"Sending ZERO command to {len(online_devices)} online device(s)", "warning")
             
             def send_commands():
+                success_count = 0
                 for d in online_devices:
-                    try:
-                        host = d.get("HostName", "localhost")
-                        port = 5001
-                        
-                        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                            sock.settimeout(2)
-                            sock.connect((host, port))
-                            sock.sendall(f"{command}\n".encode())
-                            self.call_from_thread(self._log, 
-                                f"Motors stopped on {d['Host']}", "success")
-                    except Exception as e:
+                    # Use robust TCP sending with retries
+                    success, error = send_tcp_command_robust(d, command, retries=3, retry_delay=0.5)
+                    
+                    if success:
+                        success_count += 1
                         self.call_from_thread(self._log, 
-                            f"Failed to stop motors on {d['Host']}: {e}", "error")
+                            f"Motors stopped on {d['Host']}", "success")
+                    else:
+                        self.call_from_thread(self._log, 
+                            f"Failed to stop motors on {d['Host']} after 3 retries: {error}", "error")
             
             thread = threading.Thread(target=send_commands, daemon=True)
             thread.start()
@@ -2044,17 +2104,6 @@ class LightsOffDashboard(App):
         # Run profile execution in background thread
         def execute_profile():
             try:
-                # Helper function to send TCP commands
-                def send_tcp_cmd(device, cmd: str, port: int = 5001, timeout: float = 2.0):
-                    host = device["HostName"]
-                    try:
-                        with socket.create_connection((host, port), timeout=timeout) as sock:
-                            sock.sendall(cmd.encode("utf-8"))
-                        return True
-                    except Exception as e:
-                        self.call_from_thread(self._log, f"TCP error on {device['Host']}: {e}", "error")
-                        return False
-                
                 # Ensure listeners are running on online devices only
                 self.call_from_thread(self._log, f"Starting adhesive listeners on {len(online_devices)} device(s)...", "info")
                 for d in online_devices:
@@ -2110,12 +2159,9 @@ class LightsOffDashboard(App):
                             f"Profile ABORTED at step {i+1}/{len(steps)} due to emergency stop", 
                             "error"
                         )
-                        # Send immediate stop command
+                        # Send immediate stop command with robust retries
                         for d in online_devices:
-                            try:
-                                send_tcp_cmd(d, "0,0,0", timeout=1.0)
-                            except Exception:
-                                pass
+                            send_tcp_command_robust(d, "0,0,0", retries=3, timeout=1.0)
                         self.call_from_thread(self._set_operation,
                             f"ABORTED: {profile_name}",
                             f"[#ff5555]✗ PROFILE ABORTED BY EMERGENCY STOP[/#ff5555]\n\n"
@@ -2136,9 +2182,11 @@ class LightsOffDashboard(App):
                     cmd = f"{motors[0]},{motors[1]},{motors[2]}"
                     all_success = True
                     for d in online_devices:
-                        ok = send_tcp_cmd(d, cmd)
-                        if not ok:
+                        # Use robust TCP sending with retries
+                        success, error = send_tcp_command_robust(d, cmd, retries=2, retry_delay=0.3)
+                        if not success:
                             all_success = False
+                            self.call_from_thread(self._log, f"TCP error on {d['Host']}: {error}", "error")
                     
                     status = "✓" if all_success else "✗"
                     self.call_from_thread(self._log, 
@@ -2151,7 +2199,7 @@ class LightsOffDashboard(App):
                 cmd = "0,0,0"
                 for _ in range(3):  # Send 3 times for redundancy
                     for d in online_devices:
-                        send_tcp_cmd(d, cmd)
+                        send_tcp_command_robust(d, cmd, retries=2, timeout=1.0)
                     time.sleep(0.1)
                 
                 self.call_from_thread(self._log, "Profile execution completed successfully", "success")
@@ -2347,16 +2395,14 @@ class LightsOffDashboard(App):
             try:
                 stopped_count = 0
                 for d in online_devices:
-                    try:
-                        # Send stop command via TCP (0,0,0 = stop all motors)
-                        host = d.get("HostName")
-                        port = 5001
-                        with socket.create_connection((host, port), timeout=2.0) as sock:
-                            sock.sendall("0,0,0".encode("utf-8"))
+                    # Use robust TCP sending with aggressive retries for emergency stop
+                    success, error = send_tcp_command_robust(d, "0,0,0", retries=5, retry_delay=0.3, timeout=1.5)
+                    
+                    if success:
                         stopped_count += 1
                         self._log(f"Emergency stop sent to {d['Host']}", "success")
-                    except Exception as e:
-                        self._log(f"Failed to stop {d['Host']}: {e}", "error")
+                    else:
+                        self._log(f"Failed to stop {d['Host']} after 5 retries: {error}", "error")
                 
                 self.call_from_thread(self._set_operation,
                     "Adhesive Emergency Stop",
