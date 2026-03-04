@@ -852,7 +852,10 @@ class LightsOffDashboard(App):
             ]),
             ("listeners", "4  Listeners", [
                 "Start listeners",
+<<<<<<< HEAD
                 "Restart listeners",
+=======
+>>>>>>> origin/newListener_v2
                 "Check listener logs",
                 "Kill listeners"
             ]),
@@ -1011,8 +1014,11 @@ class LightsOffDashboard(App):
         elif section == "listeners":
             if action == "Start listeners":
                 await self._do_start_listeners()
+<<<<<<< HEAD
             elif action == "Restart listeners":
                 await self._do_restart_listeners()
+=======
+>>>>>>> origin/newListener_v2
             elif action == "Check listener logs":
                 await self._do_check_listener_logs()
             elif action == "Kill listeners":
@@ -1617,8 +1623,13 @@ class LightsOffDashboard(App):
             "Start Listeners",
             f"[b]Starting listeners on {len(online_devices)} device(s)...[/b]\n\n"
             "[dim]The UnifiedListener handles:\n"
+<<<<<<< HEAD
             "  • Adhesive motors (3 motors: VESC + Arduino)\n"
             "  • Port 5001\n\n"
+=======
+            "  • Adhesive motors (port 5001)\n"
+            "  • Pressure motor (port 5002)\n\n"
+>>>>>>> origin/newListener_v2
             "Please wait...[/dim]"
         )
         
@@ -1646,7 +1657,11 @@ class LightsOffDashboard(App):
                 f"[b]Listener Status:[/b]\n\n"
                 f"{results_text}\n\n"
                 f"Devices processed: {len(online_devices)}/{len(devices)}\n\n"
+<<<<<<< HEAD
                 "[dim]UnifiedListener handles adhesive motors (3 motors).\n"
+=======
+                "[dim]UnifiedListener handles both adhesive and pressure motors.\n"
+>>>>>>> origin/newListener_v2
                 "Listeners are now ready for manual control or profile execution.[/dim]"
             )
         
@@ -1802,7 +1817,11 @@ class LightsOffDashboard(App):
                 f"[b]Unified Listener Logs (last 30 lines)[/b]\n\n"
                 f"{logs_text}\n"
                 f"[dim]Showing logs from {len(online_devices)} device(s)\n"
+<<<<<<< HEAD
                 "UnifiedListener handles adhesive motors on port 5001.[/dim]"
+=======
+                "Unified listener handles both adhesive (port 5001) and pressure (port 5002) motors.[/dim]"
+>>>>>>> origin/newListener_v2
             )
         
         thread = threading.Thread(target=fetch_logs, daemon=True)
@@ -1843,7 +1862,55 @@ class LightsOffDashboard(App):
         # Clear emergency stop flag when entering manual control
         self._emergency_stop_flag = False
         
+<<<<<<< HEAD
         self._log("Manual control ready - ensure listeners are running from Listeners menu", "info")
+=======
+        # Check if UnifiedListener is already running (don't restart it!)
+        self._log(f"Checking UnifiedListener status on {len(online_devices)} device(s)...", "info")
+        
+        # Verify listeners in background on online devices only
+        def verify_listeners():
+            ready_count = 0
+            for d in online_devices:
+                try:
+                    host = d["HostName"]
+                    user = d["User"]
+                    
+                    # Check if port 5001 (adhesive) is listening - do NOT kill/restart
+                    check_cmd = "lsof -i :5001 -sTCP:LISTEN 2>/dev/null | grep -q python && echo 'LISTENING' || echo 'NOT_LISTENING'"
+                    ssh_cmd = [
+                        "sshpass", "-p", "lightsoff", "ssh",
+                        "-o", "StrictHostKeyChecking=no",
+                        "-o", "ConnectTimeout=5",
+                        f"{user}@{host}",
+                        check_cmd
+                    ]
+                    
+                    result = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=10)
+                    
+                    if result.returncode == 0 and "LISTENING" in result.stdout:
+                        ready_count += 1
+                        self.call_from_thread(self._log, f"✓ Listener ready on {d['Host']}", "success")
+                    else:
+                        self.call_from_thread(self._log, 
+                            f"⚠ Listener NOT running on {d['Host']} - please start it from Listeners menu first", 
+                            "warning")
+                except Exception as e:
+                    self.call_from_thread(self._log, f"✗ Failed to check listener on {d['Host']}: {e}", "error")
+            
+            # Summary message
+            if ready_count == len(online_devices):
+                self.call_from_thread(self._log, f"All {ready_count} listener(s) ready - manual control active", "success")
+            elif ready_count > 0:
+                self.call_from_thread(self._log, f"{ready_count}/{len(online_devices)} listener(s) ready - some devices may not respond", "warning")
+            else:
+                self.call_from_thread(self._log, 
+                    f"⚠ No listeners ready - please start listeners from menu first!", 
+                    "error")
+        
+        thread = threading.Thread(target=verify_listeners, daemon=True)
+        thread.start()
+>>>>>>> origin/newListener_v2
         
         # Show the interactive manual control form (pass online_devices)
         operation_view = self.query_one("#operation", OperationView)
@@ -2351,7 +2418,11 @@ class LightsOffDashboard(App):
             "Kill Listeners",
             f"[b]Cleaning up processes on {len(online_devices)} device(s)...[/b]\n\n"
             "[dim]This will kill all Python processes including:\n"
+<<<<<<< HEAD
             "  • UnifiedListener.py (adhesive motors)\n"
+=======
+            "  • UnifiedListener.py (adhesive + pressure motors)\n"
+>>>>>>> origin/newListener_v2
             "  • Any other running Python scripts\n\n"
             "Please wait...[/dim]"
         )
@@ -2366,7 +2437,11 @@ class LightsOffDashboard(App):
                     "Kill Listeners Complete",
                     f"[#50fa7b]✓[/#50fa7b] Successfully cleaned up processes on {len(online_devices)} online device(s).\n\n"
                     "All Python processes have been terminated:\n"
+<<<<<<< HEAD
                     "  • UnifiedListener stopped (adhesive motors)\n"
+=======
+                    "  • UnifiedListener stopped (adhesive + pressure motors)\n"
+>>>>>>> origin/newListener_v2
                     "  • Other Python scripts killed\n\n"
                     f"Online devices: {len(online_devices)}/{len(devices)}\n\n"
                     "[dim]You can now restart the listeners or run profiles.[/dim]"

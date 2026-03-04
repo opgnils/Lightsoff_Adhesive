@@ -1168,7 +1168,11 @@ def _cli_emergency_stop(appstate: dict):
 
 
 def _cli_adhesive_action(appstate: dict, engage: bool):
+<<<<<<< HEAD
     """Adhesive control loop using a persistent unified listener.
+=======
+    """Adhesive control loop using a persistent Jetson listener.
+>>>>>>> origin/newListener_v2
 
     Lets the user choose manual RPM/flowrates and STOP ALL.
     """
